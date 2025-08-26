@@ -126,4 +126,4 @@ Gebruik secrets via environment variables en rotation
 
 ## GitHub Pages demo
 
-The file `index.html` with accompanying `script.js` demonstrates a minimal web page for testing in GitHub Pages. It includes a placeholder for future integration with the AuditCase API.
+Open `login.html` to choose a user and then continue to `index.html` for the main application. These static pages include a placeholder for future integration with the AuditCase API.
