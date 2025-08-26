@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Simple transition for showing/hiding questions */
-        .question-container.hidden {
+        .question-container.hidden, .content-pane.hidden {
             display: none;
         }
         .sub-question {
@@ -21,6 +21,22 @@
             background-color: #2563eb;
             color: white;
             font-weight: 600;
+        }
+        /* Style for the active tab button */
+        .tab-btn.active {
+            border-color: #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        /* Custom styles for headings within the work program */
+        .werkprogramma-heading {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 2px solid #d1d5db;
         }
     </style>
 </head>
@@ -50,7 +66,7 @@
             <div id="loader" class="text-center p-8 hidden">
                 <p class="text-gray-500">Werkprogramma wordt geladen...</p>
             </div>
-            <!-- Questions will be dynamically inserted here -->
+            <!-- Tabs and question content will be dynamically inserted here -->
         </main>
 
         <footer class="text-center mt-8 text-gray-500">
@@ -65,20 +81,29 @@
 
             // Event listeners for the program selection buttons
             btnIb.addEventListener('click', () => {
-                setActiveButton(btnIb);
+                setActiveButton(btnIb, '.program-btn');
                 loadAndRenderWorkProgram('ib');
             });
 
             btnVpb.addEventListener('click', () => {
-                setActiveButton(btnVpb);
+                setActiveButton(btnVpb, '.program-btn');
                 loadAndRenderWorkProgram('vpb');
             });
         });
         
-        // Object to store the markdown for both work programs
-        const WORK_PROGRAMS = {
+        // Data store for all markdown content
+        const CONTENT_DATA = {
+            client: `
+## Klant acceptatie
+1. Is de opdrachtbevestiging getekend en opgeslagen in het dossier?
+2. Is er een kopie van het paspoort of identiteitsbewijs van de cliënt aanwezig?
+3. Is de UBO (Ultimate Beneficial Owner) vastgesteld en gedocumenteerd?
+    a. Zijn de UBO-verklaringen compleet en ondertekend?
+4. Is het KYC (Know Your Customer) proces volledig doorlopen?
+    a. Is de cliënt gecontroleerd op PEP (Politically Exposed Person) en sanctielijsten?
+    b. Is de uitkomst van de Wwft-check vastgelegd?
+`,
             ib: `
-# Werkprogramma opstellen aangifte inkomstenbelasting
 ## Algemeen
 1. Is cliënt het hele jaar of een gedeelte van het jaar gehuwd? Zo nee, ga naar vraag 6
 2. Is cliënt gehuwd in gemeenschap van goederen?
@@ -109,67 +134,129 @@
 21. Is er sprake van winst uit onderneming? Zo nee, ga naar vraag 22
     a. Jaarstukken
        - Zijn alle jaarstukken ingevoerd?
+       - Btw-positie gespecificeerd in jaarstuk?
+       - Sluit het resultaat van het jaarstuk met de aangifte in aangifteprogramma?
+       - Is de jaarrekening al door vennoot/afdelingshoofd nagekeken?
     b. Aangifte
        - Voldoet cliënt aan urencriterium en licht toe waarom?
+       - Is de landbouwvrijstelling toegepast? Zo ja, licht toe
 22. Is er sprake van loon of inkomen uit vroegere dienstbetrekking? Zo nee, ga naar vraag 23
     - Jaaropgaven in dossier?
+    - Als werknemer met openbaar vervoer reist: verklaring in dossier?
+    - Is er sprake van een dga? Zo nee, ga naar vraag 23
 23. Is er sprake van resultaat uit overige werkzaamheden? Zo nee, ga naar vraag 24
     - Jaaropgaven in dossier
+    - Balans/resultaat per werkzaamheid ingevuld
+24. Is er sprake van (negatieve) uitgaven inkomensvoorziening? Zo nee, ga naar vraag 25
+    A. Lijfrente
+       - Jaar- en reserveringsruimte ingevuld?
+    B. Premies arbeidsongeschiktheidsverzekering betaald?
+       - Betalingsbewijs in dossier?
+25. Inkomsten uit eigen woning. Zo nee, ga naar vraag 26
+    - Is er een eigenwoningreserve uit het verleden?
+    - Is er een aflossingsstand? Licht toe
+26. Is er sprake van periodieke uitkeringen en verstrekkingen? Zo nee, ga naar vraag 27
+    - Alimentatie ontvangen? (voor kinderen niet belast)
 ## Box II aandachtspunten
 27. Is er sprake van een aanmerkelijk belang? Zo nee, ga naar vraag 28
-    a. Regulier voordeel?
+    a. Regulier voordeel? Zo ja:
        - Aangifte(n) dividendbelasting in dossier?
+    b. (Fictief) vervreemdingsvoordeel? Zo ja:
+       - Verkoopovereenkomst in permanent dossier?
+## Box III aandachtspunten
+28. Is er sprake van bezittingen? Zo nee, ga naar vraag 29
+    a. Jaaropgave(n) banksaldi in dossier?
+    b. Jaaropgave(n) effecten in dossier?
+29. Is er sprake van schulden? Zo nee, ga naar vraag 30
+    - Jaaropgave(n) banksaldi in dossier
+30. Vrijstellingen
+    - Vrijstelling groene beleggingen van toepassing? Jaaropgave in dossier?
+## Vermogen
+31. Is het vermogen sterk toe- of afgenomen? Zo ja, verklaring in dossier aanwezig?
+## Persoonsgebonden aftrek
+32. Alimentatie betaald aan ex-partner?
+    - Betalingsbewijzen en echtscheidingsconvenant in dossier?
+## Heffingskortingen
+33. Levensloop (deels) opgenomen? Levensloopkorting toegepast? (tot 2022)
+    - Alleenstaande ouderenkorting bij AOW ongehuwden geclaimd?
+## Bijzondere situaties en voorheffingen
+34. Betrokken bij trustvermogen?
+    - Buitenlandse dividendbelasting ingevuld bij voorkoming dubbele belasting?
+## Diversen
+35. Heeft overheveling van box III naar box I of II plaatsgevonden of andersom? Licht toe
+    - Voorlopige aanslagen IB/ZVW ingevuld?
 `,
             vpb: `
-# Werkprogramma opstellen aangifte vennootschapsbelasting
 ## Fiscale eenheid Vpb
 | 1 | Is er sprake van een fiscale eenheid Vpb? Zo ja, onderstaande vragen beantwoorden |
 | 2 | Zijn er ondernemingen gevoegd of ontvoegd in het boekjaar? |
-| 3 | Hebben er verschuivingen plaatsgevonden binnen de fiscale eenheid van vermogensbestanddelen of HIR? |
+| 3 | Hebben er verschuivingen plaatsgevonden binnen de fiscale eenheid van vermogensbestanddelen of HIR? Denk bijv. aan: onderneming (doorzakking), onroerend goed, machines/inventaris. Zo ja, licht toe |
 ## Concern
 | 4 | Is er sprake van een concern (meerdere bv's)? Zo ja, onderstaande vragen beantwoorden |
-| 5 | Vinden er transacties plaats binnen het concern/tussen gelieerde personen maar buiten de fiscale eenheid Vpb? |
-| 6 | Is er sprake van (een) concernfinanciering(en) buiten fiscale eenheid Vpb? |
+| 5 | Vinden er transacties plaats binnen het concern/tussen gelieerde personen maar buiten de fiscale eenheid Vpb?<br>Zo ja, zijn deze transacties op zakelijke gronden en marktprijzen? |
+| 6 | Is er sprake van (een) concernfinanciering(en) buiten fiscale eenheid Vpb?<br>- Is er sprake van een marktconforme rente?<br>- Zijn er voldoende zekerheden verstrekt?<br>- Zijn de overeenkomsten aanwezig in permanent dossier? |
 ## Aandeelhouders en deelnemingen
-| 7 | Heeft de onderneming aandeelhouders? Zo ja, is de specificatie ingevuld? |
-| 8 | Heeft de onderneming deelnemingen? Zo ja, is de specificatie ingevuld? |
+| 7 | Heeft de onderneming aandeelhouders? Zo ja, is de specificatie ingevuld (ook de schuld/vordering (R/C) posities en uitgekeerd dividend)? |
+| 8 | Heeft de onderneming deelnemingen? Zo ja, is de specificatie ingevuld (ook de schuld/vordering (R/C) posities en uitgekeerd dividend)?<br>Indien sprake is van deelnemingen, is toepassing van de deelnemingsvrijstelling beoordeeld? |
 ## Jaarrekening(en)
 | 9 | Is de afschrijvingsstaat in het dossier opgenomen? |
 | 10 | Zijn de restwaarde en/of bodemwaarde ingevuld in de aangifte en beoordeeld? |
+## Deelnemingen
+| 16 | Zijn de deelnemingen fiscaal gewaardeerd op kostprijs in de aangifte? |
+| 17 | Indien een deelneming vergroot/aangeschaft/verkleind/vervreemd is, zijn dan de kosten gecorrigeerd (niet aftrekbaar)? |
+## Vorderingen
+| 19 | Is de nominale waarde van de debiteuren/vorderingen opgenomen in de aangifte? |
+| 20 | Is de rente op de leningen zakelijk (denk aan: zekerheid, marktconforme rente, aflossingscapaciteit)? |
+## Passiva
+| 21 | Sluit het fiscale beginvermogen in de aangifte aan met de aangifte van voorgaand jaar? |
+## Fiscale voorzieningen
+| 22 | Zo ja, is er een onderbouwing in het dossier en voldoen ze aan de fiscale eisen? |
+| 23 | Onderhoudsvoorziening = onderhoudsplan aanwezig in permanent dossier? |
+## Schulden
+| 27 | Zit de rondrekening omzetbelasting in het dossier? Is de specificatie omzetbelasting in de aangifte ingevuld? |
+| 28 | Is sprake van een lening? Zo ja, is de lening zakelijk (denk aan: zekerheid, marktconforme rente, aflossingscapaciteit)? |
+## Vermogensvergelijking
+| 29 | Zijn alle jaarstukken ingevoerd in het aangifteprogramma? |
+| 30 | Is de jaarrekening al door partner/accountant nagekeken? |
+## Fiscale winstberekening
+| 34 | Zijn dividenduitkeringen, terugbetalingen van kapitaal aan aandeelhouders of kapitaalstortingen door aandeelhouders verwerkt? Zo ja, zijn de specificaties opgenomen in het dossier? |
+| 35 | Is de balanspositie van de Vpb ingevuld in het aangifteprogramma (bij niet aftrekbare bedragen/Vpb)? |
+## Verliesverrekening
+| 42 | Is er sprake van verlies in voorgaande jaren? |
+| 43 | Zijn de verliezen van voorgaande jaren goed ingevuld conform de verliesbeschikkingen |
+## Algemeen/berekening belastingbedrag
+| 47 | Als er sprake is van belegging in aandelen, is de Nederlandse dividendbelasting meegenomen in de voorheffingen en de buitenlandse bronheffing onder voorkoming dubbele belasting? |
+| 48 | Zijn de voorlopige aanslagen opgenomen/beoordeeld in het aangifteprogramma? |
+## Buitenlandse activiteiten
+| 52 | Zijn er buitenlandse activiteiten (vaste inrichting)?<br>Is documentatie transfer pricing aanwezig? |
+| 53 | Is er sprake van voorkoming dubbele belastingen (elders belast)? |
 `
         };
 
-        /**
-         * Sets the visual style for the active program button.
-         * @param {HTMLElement} activeButton - The button element to be styled as active.
-         */
-        function setActiveButton(activeButton) {
-            document.querySelectorAll('.program-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+        function setActiveButton(activeButton, selector) {
+            document.querySelectorAll(selector).forEach(btn => btn.classList.remove('active'));
             activeButton.classList.add('active');
         }
 
-        /**
-         * Parses the markdown for the IB program (list format).
-         */
-        function parseIbProgram(markdown) {
+        function parseMarkdownToList(markdown) {
             const lines = markdown.split('\n');
             const questions = [];
             let currentMainQuestion = null, currentSubQuestion = null;
-            const mainQRegex = /^(\d+)\.\s*(.*)/, subQRegex = /^\s+([a-zA-Z])\.\s*(.*)/, detailQRegex = /^\s+-\s*(.*)/;
+            const mainQRegex = /^(\d+)\.\s*(.*)/, subQRegex = /^\s+([a-zA-Z])\.\s*(.*)/, detailQRegex = /^\s+-\s*(.*)/, headingRegex = /^##\s+(.*)/;
 
             lines.forEach(line => {
                 let match;
-                if ((match = line.match(mainQRegex))) {
+                if ((match = line.match(headingRegex))) {
+                    questions.push({ isHeading: true, text: match[1].trim() });
+                    currentMainQuestion = null; currentSubQuestion = null;
+                } else if ((match = line.match(mainQRegex))) {
                     const id = match[1];
                     let text = match[2].trim();
                     const condition = parseCondition(text);
                     if (condition) text = text.replace(/Zo nee,.*|Zo ja,.*/i, '').trim();
                     const question = { id, text, children: [], condition, level: 0 };
                     questions.push(question);
-                    currentMainQuestion = question;
-                    currentSubQuestion = null;
+                    currentMainQuestion = question; currentSubQuestion = null;
                 } else if (currentMainQuestion && (match = line.match(subQRegex))) {
                     const id = `${currentMainQuestion.id}${match[1]}`;
                     const question = { id, text: match[2].trim(), children: [], level: 1 };
@@ -184,66 +271,39 @@
             return questions;
         }
 
-        /**
-         * Parses the markdown for the VPB program (table format).
-         */
-        function parseVpbProgram(markdown) {
+        function parseMarkdownFromTable(markdown) {
             const lines = markdown.split('\n');
             const questions = [];
-            const vpbQRegex = /^\|\s*(\d+)\s*\|([^|]+)\|/;
+            const vpbQRegex = /^\|\s*(\d+)\s*\|([^|]+)\|/, headingRegex = /^##\s+(.*)/;
             lines.forEach(line => {
-                const match = line.match(vpbQRegex);
-                if (match) {
+                let match;
+                if ((match = line.match(headingRegex))) {
+                    questions.push({ isHeading: true, text: match[1].trim() });
+                } else if ((match = line.match(vpbQRegex))) {
                     questions.push({
                         id: match[1].trim(),
-                        text: match[2].trim(),
-                        children: [],
-                        level: 0
+                        text: match[2].trim().replace(/<br>/g, ' '),
+                        children: [], level: 0
                     });
                 }
             });
             return questions;
         }
-        
-        /**
-         * Generic parser that delegates to the specific program parser.
-         */
-        function parseWorkProgram(markdown, type) {
-            if (type === 'ib') {
-                return parseIbProgram(markdown);
-            } else if (type === 'vpb') {
-                return parseVpbProgram(markdown);
-            }
-            return [];
-        }
 
-        /**
-         * Parses conditional logic text from IB questions.
-         */
         function parseCondition(text) {
             const skipMatch = text.match(/Zo (nee|ja)[\s,:]*(?:ga naar vraag|ga naar)\s*(\d+)/i);
-            if (skipMatch) {
-                return { on: skipMatch[1].toLowerCase(), action: 'skip', target: skipMatch[2] };
-            }
-            if (/Zo nee, ga naar vraag \d+/.test(text)) {
-                 return { on: 'no', action: 'hide_children' };
-            }
+            if (skipMatch) return { on: skipMatch[1].toLowerCase(), action: 'skip', target: skipMatch[2] };
+            if (/Zo nee, ga naar vraag \d+/.test(text)) return { on: 'no', action: 'hide_children' };
             return null;
         }
 
-        /**
-         * Renders the parsed questions into the DOM.
-         */
         function renderQuestions(questions, container, type) {
-            container.innerHTML = '';
             questions.forEach(q => {
                 container.appendChild(createQuestionElement(q, type));
                 if (q.children && q.children.length > 0) {
                     const childrenContainer = document.createElement('div');
                     childrenContainer.id = `children-of-${q.id}`;
-                    if (q.condition?.action === 'hide_children') {
-                         childrenContainer.classList.add('hidden');
-                    }
+                    if (q.condition?.action === 'hide_children') childrenContainer.classList.add('hidden');
                     childrenContainer.classList.add('sub-question');
                     renderQuestions(q.children, childrenContainer, type);
                     container.appendChild(childrenContainer);
@@ -251,20 +311,21 @@
             });
         }
 
-        /**
-         * Creates a single question element.
-         */
         function createQuestionElement(q, type) {
+            if (q.isHeading) {
+                const heading = document.createElement('h2');
+                heading.className = 'werkprogramma-heading';
+                heading.textContent = q.text;
+                return heading;
+            }
             const div = document.createElement('div');
             div.className = 'question-container py-4 border-b border-gray-200';
             div.id = `question-${q.id}`;
             div.dataset.questionId = q.id;
-
             const questionText = document.createElement('p');
             questionText.className = 'font-semibold text-gray-700';
             questionText.textContent = q.isDetail ? q.text : `${q.id}. ${q.text}`;
             div.appendChild(questionText);
-
             if (!q.isDetail) {
                 const radioContainer = document.createElement('div');
                 radioContainer.className = 'mt-2 flex items-center gap-x-6';
@@ -273,7 +334,7 @@
                     <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="no" class="form-radio h-4 w-4 text-blue-600"><span>Nee</span></label>
                     <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="na" class="form-radio h-4 w-4 text-blue-600" checked><span>N.v.t.</span></label>
                 `;
-                if (type === 'ib') { // Conditional logic only applies to IB for now
+                if (type === 'ib' || type === 'client') {
                     radioContainer.addEventListener('change', (e) => handleAnswerChange(q, e.target.value));
                 }
                 div.appendChild(radioContainer);
@@ -281,14 +342,10 @@
             return div;
         }
         
-        /**
-         * Handles conditional logic for IB questions.
-         */
         function handleAnswerChange(question, answer) {
             const condition = question.condition;
             if (!condition) return;
             const shouldTrigger = (condition.on === answer);
-
             if (condition.action === 'skip') {
                 const allQuestions = document.querySelectorAll('.question-container');
                 const startSkipId = parseInt(question.id, 10) + 1;
@@ -307,9 +364,6 @@
             }
         }
 
-        /**
-         * Main function to orchestrate loading, parsing, and rendering.
-         */
         async function loadAndRenderWorkProgram(type) {
             const container = document.getElementById('werkprogramma-container');
             const loader = document.getElementById('loader');
@@ -317,18 +371,53 @@
             
             welcomeMsg.classList.add('hidden');
             loader.classList.remove('hidden');
-            container.innerHTML = ''; // Clear content immediately
+            container.innerHTML = '';
             container.appendChild(loader);
 
             try {
-                // Simulate a small delay for better user experience
                 await new Promise(resolve => setTimeout(resolve, 200));
 
-                const markdown = WORK_PROGRAMS[type];
-                const questions = parseWorkProgram(markdown, type);
+                const clientQuestions = parseMarkdownToList(CONTENT_DATA.client);
+                const taxQuestions = type === 'ib' ? parseMarkdownToList(CONTENT_DATA.ib) : parseMarkdownFromTable(CONTENT_DATA.vpb);
                 
                 loader.classList.add('hidden');
-                renderQuestions(questions, container, type);
+                
+                // Create Tab structure
+                container.innerHTML = `
+                    <div class="border-b border-gray-200">
+                        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button id="tab-client" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Klant</button>
+                            <button id="tab-tax" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Aangifte</button>
+                        </nav>
+                    </div>
+                    <div id="client-pane" class="content-pane py-4"></div>
+                    <div id="tax-pane" class="content-pane py-4 hidden"></div>
+                `;
+
+                const clientPane = document.getElementById('client-pane');
+                const taxPane = document.getElementById('tax-pane');
+                renderQuestions(clientQuestions, clientPane, 'client');
+                renderQuestions(taxQuestions, taxPane, type);
+
+                const tabClient = document.getElementById('tab-client');
+                const tabTax = document.getElementById('tab-tax');
+                
+                // Tab switching logic
+                const setupTabs = () => {
+                    setActiveButton(tabClient, '.tab-btn');
+                    tabClient.addEventListener('click', () => {
+                        setActiveButton(tabClient, '.tab-btn');
+                        clientPane.classList.remove('hidden');
+                        taxPane.classList.add('hidden');
+                    });
+                    tabTax.addEventListener('click', () => {
+                        setActiveButton(tabTax, '.tab-btn');
+                        clientPane.classList.add('hidden');
+                        taxPane.classList.remove('hidden');
+                    });
+                };
+                setupTabs();
+
             } catch (error) {
                 console.error(`Failed to load work program for ${type}:`, error);
                 container.innerHTML = '<p class="text-red-500 text-center">Fout bij het laden van het werkprogramma.</p>';
