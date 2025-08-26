@@ -7,28 +7,26 @@
     <!-- Using Tailwind CSS for a clean, modern look -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Simple transition for showing/hiding questions */
-        .question-container.hidden, .content-pane.hidden {
-            display: none;
-        }
+        /* Simple transition for showing/hiding elements */
+        .hidden { display: none; }
         .sub-question {
-            padding-left: 2rem; /* Indent sub-questions */
-            border-left: 2px solid #e5e7eb; /* Add a visual indicator for nesting */
+            padding-left: 1.5rem;
+            border-left: 2px solid #e5e7eb;
             margin-left: 0.5rem;
         }
-        /* Style for the active program button */
+        /* Style for active buttons */
+        .program-btn.active, .tab-btn.active {
+            font-weight: 600;
+        }
         .program-btn.active {
             background-color: #2563eb;
             color: white;
-            font-weight: 600;
         }
-        /* Style for the active tab button */
         .tab-btn.active {
             border-color: #2563eb;
             color: #2563eb;
-            font-weight: 600;
         }
-        /* Custom styles for headings within the work program */
+        /* Custom styles for headings and details/summary */
         .werkprogramma-heading {
             font-size: 1.25rem;
             font-weight: 700;
@@ -38,60 +36,152 @@
             padding-bottom: 0.25rem;
             border-bottom: 2px solid #d1d5db;
         }
+        details > summary {
+            cursor: pointer;
+            list-style: none; /* Remove default marker */
+        }
+        details > summary::-webkit-details-marker {
+            display: none; /* Remove default marker for Chrome */
+        }
+        details > summary::before {
+            content: '▶';
+            margin-right: 0.5rem;
+            font-size: 0.8em;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+        details[open] > summary::before {
+            transform: rotate(90deg);
+        }
+        /* Mock Toast/Notification Style */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            background-color: #2d3748;
+            color: white;
+            font-size: 1rem;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        #toast.show {
+            opacity: 1;
+            bottom: 30px;
+        }
+        /* Disabled state for the form */
+        #form-fieldset:disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        /* Login screen styles */
+        #login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
 
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Dynamisch Werkprogramma</h1>
-            <p class="text-gray-600 mt-2">Selecteer een werkprogramma om te beginnen.</p>
-            
-            <!-- Buttons to switch between IB and VPB programs -->
-            <div class="mt-4 flex space-x-4">
-                <button id="btn-ib" class="program-btn flex-1 py-2 px-4 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
-                    Inkomstenbelasting (IB)
-                </button>
-                <button id="btn-vpb" class="program-btn flex-1 py-2 px-4 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
-                    Vennootschapsbelasting (VPB)
-                </button>
-            </div>
-        </header>
-
-        <main id="werkprogramma-container" class="bg-white p-6 rounded-lg shadow-md min-h-[200px]">
-            <div id="welcome-message" class="text-center p-8">
-                <h2 class="text-xl font-semibold text-gray-700">Welkom!</h2>
-                <p class="text-gray-500 mt-2">Kies hierboven een werkprogramma om de vragenlijst te laden.</p>
-            </div>
-            <div id="loader" class="text-center p-8 hidden">
-                <p class="text-gray-500">Werkprogramma wordt geladen...</p>
-            </div>
-            <!-- Tabs and question content will be dynamically inserted here -->
-        </main>
-
-        <footer class="text-center mt-8 text-gray-500">
-            <p>&copy; 2024 MVP Werkprogramma</p>
-        </footer>
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="bg-white p-8 rounded-lg shadow-md text-center w-full max-w-sm">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">Inloggen</h1>
+            <p class="text-gray-600 mb-6">Selecteer een gebruiker om in te loggen.</p>
+            <select id="user-select" class="w-full p-2 border border-gray-300 rounded-md mb-4">
+                <!-- Users will be populated here -->
+            </select>
+            <button id="btn-login" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
+                Login
+            </button>
+        </div>
     </div>
+    
+    <!-- Main Application Container (initially hidden) -->
+    <div id="app-container" class="hidden">
+        <!-- Dashboard Screen -->
+        <div id="dashboard-screen" class="container mx-auto p-4 md:p-8">
+             <header class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex flex-wrap justify-between items-center gap-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
+                        <p class="text-gray-600 mt-2">Selecteer een werkprogramma en cliënt om te starten.</p>
+                    </div>
+                    <div class="text-sm text-right">
+                        <p class="font-semibold" id="user-display-dashboard"></p>
+                        <button id="btn-logout" class="text-xs text-blue-600 hover:underline">Uitloggen</button>
+                    </div>
+                </div>
+                <div class="mt-4 border-t pt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">1. Kies Werkprogramma</label>
+                            <div class="mt-1 flex space-x-2">
+                                <button id="btn-ib" class="program-btn flex-1 py-2 px-4 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition">IB</button>
+                                <button id="btn-vpb" class="program-btn flex-1 py-2 px-4 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition">VPB</button>
+                            </div>
+                        </div>
+                        <div id="client-selection-container" class="hidden">
+                            <label for="client-select" class="block text-sm font-medium text-gray-700">2. Kies Cliënt</label>
+                            <select id="client-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                <option value="">-- Selecteer --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 text-right">
+                        <button id="btn-open-werkprogramma" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400" disabled>
+                            Open Werkprogramma
+                        </button>
+                    </div>
+                </div>
+            </header>
+        </div>
+
+        <!-- Werkprogramma Screen (initially hidden) -->
+        <div id="werkprogramma-screen" class="hidden container mx-auto p-4 md:p-8">
+            <header class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <div class="flex flex-wrap justify-between items-center gap-4">
+                    <div>
+                        <button id="btn-back-to-dashboard" class="text-sm text-blue-600 hover:underline mb-2">&larr; Terug naar Dashboard</button>
+                        <h1 class="text-3xl font-bold text-gray-800">Werkprogramma</h1>
+                        <p id="header-subtitle" class="text-gray-600 mt-2"></p>
+                        <div id="dossier-status-container" class="hidden mt-2 text-sm">
+                            Huidige status: <span id="dossier-status-badge" class="font-bold px-2 py-1 rounded-full"></span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-sm">
+                            <p class="font-semibold" id="user-display-werkprogramma"></p>
+                            <input type="text" id="api-key-input" placeholder="AuditCase API Key" class="mt-1 text-xs p-1 border rounded-md w-48">
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <input type="file" id="import-file" class="hidden" accept=".txt">
+                             <label for="import-file" class="cursor-pointer bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition">Importeren (TXT)</label>
+                             <button id="btn-export" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition">Exporteren (TXT)</button>
+                        </div>
+                        <div id="action-buttons" class="flex items-center gap-2">
+                            <button id="btn-submit" class="hidden bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Indienen</button>
+                            <button id="btn-review" class="hidden bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition">Reviewen</button>
+                            <button id="btn-close" class="hidden bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition">Afsluiten</button>
+                            <button id="btn-reopen" class="hidden bg-yellow-500 text-black font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition">Heropenen</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <main id="werkprogramma-container" class="bg-white p-6 rounded-lg shadow-md min-h-[200px]"></main>
+        </div>
+    </div>
+    
+    <div id="toast"></div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const btnIb = document.getElementById('btn-ib');
-            const btnVpb = document.getElementById('btn-vpb');
-
-            // Event listeners for the program selection buttons
-            btnIb.addEventListener('click', () => {
-                setActiveButton(btnIb, '.program-btn');
-                loadAndRenderWorkProgram('ib');
-            });
-
-            btnVpb.addEventListener('click', () => {
-                setActiveButton(btnVpb, '.program-btn');
-                loadAndRenderWorkProgram('vpb');
-            });
-        });
-        
-        // Data store for all markdown content
+        // --- Data store for all markdown content ---
         const CONTENT_DATA = {
             client: `
 ## Klant acceptatie
@@ -99,7 +189,7 @@
 2. Is er een kopie van het paspoort of identiteitsbewijs van de cliënt aanwezig?
 3. Is de UBO (Ultimate Beneficial Owner) vastgesteld en gedocumenteerd?
     a. Zijn de UBO-verklaringen compleet en ondertekend?
-4. Is het KYC (Know Your Customer) proces volledig doorlopen?
+4. Is het KYC (Know Your Customer) proces volledig doorlpen?
     a. Is de cliënt gecontroleerd op PEP (Politically Exposed Person) en sanctielijsten?
     b. Is de uitkomst van de Wwft-check vastgelegd?
 `,
@@ -328,177 +418,199 @@
 `
         };
 
-        function setActiveButton(activeButton, selector) {
-            document.querySelectorAll(selector).forEach(btn => btn.classList.remove('active'));
-            activeButton.classList.add('active');
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- App State ---
+            let currentProgram = null;
+            let currentUser = null;
+            let dossierStatus = 'open'; // 'open', 'ingediend', 'gereviewd', 'afgesloten'
 
-        function parseMarkdownToList(markdown) {
-            const lines = markdown.split('\n');
-            const questions = [];
-            let currentMainQuestion = null, currentSubQuestion = null;
-            const mainQRegex = /^(\d+)\.\s*(.*)/, subQRegex = /^\s+([a-zA-Z])\.\s*(.*)/, detailQRegex = /^\s+-\s*(.*)/, headingRegex = /^##\s+(.*)/;
+            // --- DOM Element References ---
+            const dom = {
+                loginScreen: document.getElementById('login-screen'),
+                appContainer: document.getElementById('app-container'),
+                dashboardScreen: document.getElementById('dashboard-screen'),
+                werkprogrammaScreen: document.getElementById('werkprogramma-screen'),
+                userSelect: document.getElementById('user-select'),
+                btnLogin: document.getElementById('btn-login'),
+                btnLogout: document.getElementById('btn-logout'),
+                userDisplayDashboard: document.getElementById('user-display-dashboard'),
+                userDisplayWerkprogramma: document.getElementById('user-display-werkprogramma'),
+                apiKeyInput: document.getElementById('api-key-input'),
+                btnIb: document.getElementById('btn-ib'),
+                btnVpb: document.getElementById('btn-vpb'),
+                clientSelectionContainer: document.getElementById('client-selection-container'),
+                clientSelect: document.getElementById('client-select'),
+                btnOpenWerkprogramma: document.getElementById('btn-open-werkprogramma'),
+                btnBackToDashboard: document.getElementById('btn-back-to-dashboard'),
+                headerSubtitle: document.getElementById('header-subtitle'),
+                werkprogrammaContainer: document.getElementById('werkprogramma-container'),
+                dossierStatusContainer: document.getElementById('dossier-status-container'),
+                dossierStatusBadge: document.getElementById('dossier-status-badge'),
+                btnSubmit: document.getElementById('btn-submit'),
+                btnReview: document.getElementById('btn-review'),
+                btnClose: document.getElementById('btn-close'),
+                btnReopen: document.getElementById('btn-reopen'),
+                btnExport: document.getElementById('btn-export'),
+                importFile: document.getElementById('import-file'),
+            };
 
-            lines.forEach(line => {
-                let match;
-                if ((match = line.match(headingRegex))) {
-                    questions.push({ isHeading: true, text: match[1].trim() });
-                    currentMainQuestion = null; currentSubQuestion = null;
-                } else if ((match = line.match(mainQRegex))) {
-                    const id = match[1];
-                    let text = match[2].trim();
-                    const condition = parseCondition(text);
-                    if (condition) text = text.replace(/Zo nee,.*|Zo ja,.*/i, '').trim();
-                    const question = { id, text, children: [], condition, level: 0 };
-                    questions.push(question);
-                    currentMainQuestion = question; currentSubQuestion = null;
-                } else if (currentMainQuestion && (match = line.match(subQRegex))) {
-                    const id = `${currentMainQuestion.id}${match[1]}`;
-                    const question = { id, text: match[2].trim(), children: [], level: 1 };
-                    currentMainQuestion.children.push(question);
-                    currentSubQuestion = question;
-                } else if ((currentSubQuestion || currentMainQuestion) && (match = line.match(detailQRegex))) {
-                    const parent = currentSubQuestion || currentMainQuestion;
-                    const id = `${parent.id}-${parent.children.length + 1}`;
-                    parent.children.push({ id, text: match[1].trim(), level: (parent.level || 0) + 1, isDetail: true });
-                }
-            });
-            return questions;
-        }
+            // --- Data ---
+            const users = {
+                alice: { name: "Alice (Opsteller)", role: "opsteller" },
+                bob: { name: "Bob (Reviewer)", role: "reviewer" },
+                charlie: { name: "Charlie (Admin)", role: "admin" }
+            };
+            const clients = {
+                ib: ["Jan Jansen", "Pim Jansen", "Anne de Jong"],
+                vpb: ["Test B.V.", "Test 2 B.V.", "Holding X B.V."]
+            };
+            const permissions = {
+                opsteller: { canSubmit: true, canReview: false, canClose: false, canReopen: false },
+                reviewer: { canSubmit: true, canReview: true, canClose: true, canReopen: true },
+                admin: { canSubmit: true, canReview: true, canClose: true, canReopen: true }
+            };
 
-        function parseMarkdownFromTable(markdown) {
-            const lines = markdown.split('\n');
-            const questions = [];
-            const vpbQRegex = /^\|\s*(\d+)\s*\|([^|]+)\|/, headingRegex = /^##\s+(.*)/;
-            lines.forEach(line => {
-                let match;
-                if ((match = line.match(headingRegex))) {
-                    questions.push({ isHeading: true, text: match[1].trim() });
-                } else if ((match = line.match(vpbQRegex))) {
-                    questions.push({
-                        id: match[1].trim(),
-                        text: match[2].trim().replace(/<br>/g, ' '),
-                        children: [], level: 0
-                    });
-                }
-            });
-            return questions;
-        }
-
-        function parseCondition(text) {
-            const skipMatch = text.match(/Zo (nee|ja)[\s,:]*(?:ga naar vraag|ga naar)\s*(\d+)/i);
-            if (skipMatch) return { on: skipMatch[1].toLowerCase(), action: 'skip', target: skipMatch[2] };
-            if (/Zo nee, ga naar vraag \d+/.test(text)) return { on: 'no', action: 'hide_children' };
-            return null;
-        }
-
-        function renderQuestions(questions, container, type) {
-            questions.forEach(q => {
-                container.appendChild(createQuestionElement(q, type));
-                if (q.children && q.children.length > 0) {
-                    const childrenContainer = document.createElement('div');
-                    childrenContainer.id = `children-of-${q.id}`;
-                    if (q.condition?.action === 'hide_children') childrenContainer.classList.add('hidden');
-                    childrenContainer.classList.add('sub-question');
-                    renderQuestions(q.children, childrenContainer, type);
-                    container.appendChild(childrenContainer);
-                }
-            });
-        }
-
-        function createQuestionElement(q, type) {
-            if (q.isHeading) {
-                const heading = document.createElement('h2');
-                heading.className = 'werkprogramma-heading';
-                heading.textContent = q.text;
-                return heading;
-            }
-            const div = document.createElement('div');
-            div.className = 'question-container py-4 border-b border-gray-200';
-            div.id = `question-${q.id}`;
-            div.dataset.questionId = q.id;
-            const questionText = document.createElement('p');
-            questionText.className = 'font-semibold text-gray-700';
-            questionText.textContent = q.isDetail ? q.text : `${q.id}. ${q.text}`;
-            div.appendChild(questionText);
-            if (!q.isDetail) {
-                const radioContainer = document.createElement('div');
-                radioContainer.className = 'mt-2 flex items-center gap-x-6';
-                radioContainer.innerHTML = `
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="yes" class="form-radio h-4 w-4 text-blue-600"><span>Ja</span></label>
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="no" class="form-radio h-4 w-4 text-blue-600"><span>Nee</span></label>
-                    <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="na" class="form-radio h-4 w-4 text-blue-600" checked><span>N.v.t.</span></label>
-                `;
-                if (type === 'ib' || type === 'client') {
-                    radioContainer.addEventListener('change', (e) => handleAnswerChange(q, e.target.value));
-                }
-                div.appendChild(radioContainer);
-            }
-            return div;
-        }
-        
-        function handleAnswerChange(question, answer) {
-            const condition = question.condition;
-            if (!condition) return;
-            const shouldTrigger = (condition.on === answer);
-            if (condition.action === 'skip') {
-                const allQuestions = document.querySelectorAll('.question-container');
-                const startSkipId = parseInt(question.id, 10) + 1;
-                const endSkipId = parseInt(condition.target, 10);
-                allQuestions.forEach(el => {
-                    const currentId = parseInt(el.dataset.questionId, 10);
-                    if (currentId >= startSkipId && currentId < endSkipId) {
-                        el.classList.toggle('hidden', shouldTrigger);
-                        const childrenEl = document.getElementById(`children-of-${el.dataset.questionId}`);
-                        if(childrenEl) childrenEl.classList.toggle('hidden', shouldTrigger);
+            // --- Initialization ---
+            function init() {
+                Object.keys(users).forEach(userId => {
+                    dom.userSelect.appendChild(new Option(users[userId].name, userId));
+                });
+                
+                // Event Listeners
+                dom.btnLogin.addEventListener('click', handleLogin);
+                dom.btnLogout.addEventListener('click', handleLogout);
+                dom.btnIb.addEventListener('click', () => setupClientSelection('ib'));
+                dom.btnVpb.addEventListener('click', () => setupClientSelection('vpb'));
+                dom.clientSelect.addEventListener('change', () => {
+                    dom.btnOpenWerkprogramma.disabled = !dom.clientSelect.value;
+                });
+                dom.btnOpenWerkprogramma.addEventListener('click', openWerkprogramma);
+                dom.btnBackToDashboard.addEventListener('click', showDashboard);
+                dom.btnExport.addEventListener('click', handleExport);
+                dom.importFile.addEventListener('change', handleImport);
+                
+                // Action button listeners
+                dom.btnSubmit.addEventListener('click', () => updateDossierStatus('ingediend', 'Dossier ingediend.'));
+                dom.btnReview.addEventListener('click', () => updateDossierStatus('gereviewd', 'Dossier gereviewd.'));
+                dom.btnClose.addEventListener('click', () => updateDossierStatus('afgesloten', 'Dossier afgesloten.'));
+                dom.btnReopen.addEventListener('click', () => {
+                    const reason = prompt("Reden voor heropenen:");
+                    if (reason && reason.trim() !== "") {
+                        console.log(`Dossier heropend door ${currentUser.name}. Reden: ${reason}`);
+                        updateDossierStatus('open', 'Dossier heropend.');
+                    } else if (reason !== null) {
+                        showToast("Een reden is verplicht om het dossier te heropenen.");
                     }
                 });
-            } else if (condition.action === 'hide_children') {
-                const childrenContainer = document.getElementById(`children-of-${question.id}`);
-                if (childrenContainer) childrenContainer.classList.toggle('hidden', shouldTrigger);
             }
-        }
 
-        async function loadAndRenderWorkProgram(type) {
-            const container = document.getElementById('werkprogramma-container');
-            const loader = document.getElementById('loader');
-            const welcomeMsg = document.getElementById('welcome-message');
+            // --- Core Functions ---
+
+            function handleLogin() {
+                const selectedUserId = dom.userSelect.value;
+                if (!selectedUserId) return;
+                currentUser = users[selectedUserId];
+                
+                dom.loginScreen.classList.add('hidden');
+                dom.appContainer.classList.remove('hidden');
+                showDashboard();
+                dom.userDisplayDashboard.textContent = `Ingelogd als: ${currentUser.name}`;
+                dom.userDisplayWerkprogramma.textContent = `Ingelogd als: ${currentUser.name}`;
+            }
             
-            welcomeMsg.classList.add('hidden');
-            loader.classList.remove('hidden');
-            container.innerHTML = '';
-            container.appendChild(loader);
+            function handleLogout() {
+                currentUser = null;
+                dom.appContainer.classList.add('hidden');
+                dom.loginScreen.classList.remove('hidden');
+                // Reset state
+                dom.clientSelectionContainer.classList.add('hidden');
+                setActiveButton(null, '.program-btn');
+            }
 
-            try {
-                await new Promise(resolve => setTimeout(resolve, 200));
+            function showDashboard() {
+                dom.dashboardScreen.classList.remove('hidden');
+                dom.werkprogrammaScreen.classList.add('hidden');
+            }
 
-                const clientQuestions = parseMarkdownToList(CONTENT_DATA.client);
-                const taxQuestions = type === 'ib' ? parseMarkdownToList(CONTENT_DATA.ib) : parseMarkdownFromTable(CONTENT_DATA.vpb);
+            function openWerkprogramma() {
+                if (!currentProgram || !dom.clientSelect.value) return;
+                dom.dashboardScreen.classList.add('hidden');
+                dom.werkprogrammaScreen.classList.remove('hidden');
+                dossierStatus = 'open'; // Reset status for new client
+                loadAndRenderWorkProgram(currentProgram, dom.clientSelect.value);
+            }
+
+            function setupClientSelection(programType) {
+                currentProgram = programType;
+                setActiveButton(programType === 'ib' ? dom.btnIb : dom.btnVpb, '.program-btn');
                 
-                loader.classList.add('hidden');
+                dom.clientSelect.innerHTML = '<option value="">-- Selecteer --</option>';
+                clients[programType].forEach(client => {
+                    dom.clientSelect.appendChild(new Option(client, client));
+                });
                 
-                // Create Tab structure
-                container.innerHTML = `
-                    <div class="border-b border-gray-200">
-                        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                            <button id="tab-client" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Klant</button>
-                            <button id="tab-tax" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Aangifte</button>
-                        </nav>
-                    </div>
-                    <div id="client-pane" class="content-pane py-4"></div>
-                    <div id="tax-pane" class="content-pane py-4 hidden"></div>
-                `;
+                dom.clientSelectionContainer.classList.remove('hidden');
+                dom.btnOpenWerkprogramma.disabled = true;
+            }
+            
+            function updateDossierStatus(newStatus, toastMessage) {
+                dossierStatus = newStatus;
+                updateUIForRoleAndStatus();
+                showToast(toastMessage);
+            }
 
-                const clientPane = document.getElementById('client-pane');
-                const taxPane = document.getElementById('tax-pane');
-                renderQuestions(clientQuestions, clientPane, 'client');
-                renderQuestions(taxQuestions, taxPane, type);
-
-                const tabClient = document.getElementById('tab-client');
-                const tabTax = document.getElementById('tab-tax');
+            function updateUIForRoleAndStatus() {
+                if (!currentUser) return;
+                const rolePerms = permissions[currentUser.role];
+                const isLocked = dossierStatus === 'afgesloten';
                 
-                // Tab switching logic
-                const setupTabs = () => {
+                dom.dossierStatusBadge.textContent = dossierStatus.charAt(0).toUpperCase() + dossierStatus.slice(1);
+                dom.dossierStatusBadge.className = 'font-bold px-2 py-1 rounded-full ' + 
+                    (isLocked ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800');
+                if (dom.clientSelect.value) {
+                    dom.dossierStatusContainer.classList.remove('hidden');
+                }
+
+                const fieldset = document.getElementById('form-fieldset');
+                if (fieldset) {
+                    fieldset.disabled = isLocked && currentUser.role === 'opsteller';
+                }
+
+                dom.btnSubmit.classList.toggle('hidden', !rolePerms.canSubmit || dossierStatus !== 'open');
+                dom.btnReview.classList.toggle('hidden', !rolePerms.canReview || dossierStatus !== 'ingediend');
+                dom.btnClose.classList.toggle('hidden', !rolePerms.canClose || dossierStatus !== 'gereviewd');
+                dom.btnReopen.classList.toggle('hidden', !rolePerms.canReopen || !isLocked);
+            }
+
+            async function loadAndRenderWorkProgram(type, clientName) {
+                dom.werkprogrammaContainer.innerHTML = `<div class="text-center p-8"><p class="text-gray-500">Werkprogramma wordt geladen...</p></div>`;
+                dom.headerSubtitle.textContent = `Werkprogramma ${type.toUpperCase()} voor ${clientName}`;
+
+                try {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                    const clientQuestions = parseMarkdownToList(CONTENT_DATA.client);
+                    const taxQuestions = type === 'ib' ? parseMarkdownToList(CONTENT_DATA.ib) : parseMarkdownFromTable(CONTENT_DATA.vpb);
+                    
+                    dom.werkprogrammaContainer.innerHTML = `
+                        <fieldset id="form-fieldset">
+                            <div class="border-b border-gray-200">
+                                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                    <button id="tab-client" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Klant</button>
+                                    <button id="tab-tax" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Aangifte</button>
+                                </nav>
+                            </div>
+                            <div id="client-pane" class="content-pane py-4"></div>
+                            <div id="tax-pane" class="content-pane py-4 hidden"></div>
+                        </fieldset>
+                    `;
+
+                    const clientPane = document.getElementById('client-pane'), taxPane = document.getElementById('tax-pane');
+                    renderQuestions(clientQuestions, clientPane, 'client');
+                    renderQuestions(taxQuestions, taxPane, type);
+
+                    const tabClient = document.getElementById('tab-client'), tabTax = document.getElementById('tab-tax');
+                    
                     setActiveButton(tabClient, '.tab-btn');
                     tabClient.addEventListener('click', () => {
                         setActiveButton(tabClient, '.tab-btn');
@@ -510,14 +622,234 @@
                         clientPane.classList.add('hidden');
                         taxPane.classList.remove('hidden');
                     });
-                };
-                setupTabs();
+                    
+                    updateUIForRoleAndStatus();
 
-            } catch (error) {
-                console.error(`Failed to load work program for ${type}:`, error);
-                container.innerHTML = '<p class="text-red-500 text-center">Fout bij het laden van het werkprogramma.</p>';
+                } catch (error) {
+                    console.error(`Failed to load work program for ${type}:`, error);
+                    dom.werkprogrammaContainer.innerHTML = '<p class="text-red-500 text-center">Fout bij het laden van het werkprogramma.</p>';
+                }
             }
-        }
+
+            // --- Import/Export Functions ---
+            function handleExport() {
+                let content = `# Werkprogramma ${currentProgram.toUpperCase()} - ${dom.clientSelect.value}\n`;
+                content += `# Status: ${dossierStatus}\n\n`;
+
+                document.querySelectorAll('.question-container').forEach(q => {
+                    const id = q.dataset.questionId;
+                    const text = q.querySelector('p').textContent.replace(`${id}. `, '');
+                    const checkedRadio = q.querySelector(`input[name="answer-${id}"]:checked`);
+                    if(checkedRadio) {
+                        const answer = checkedRadio.parentElement.textContent.trim();
+                        content += `${id}. ${text}: ${answer}\n`;
+                    }
+                });
+                
+                const blob = new Blob([content], { type: 'text/plain' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `werkprogramma-${dom.clientSelect.value.replace(/ /g, '_')}.txt`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showToast("Dossier geëxporteerd.");
+            }
+
+            function handleImport(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    const lines = content.split('\n');
+                    lines.forEach(line => {
+                        const match = line.match(/^([0-9a-zA-Z]+)\..*:\s(Ja|Nee|N\.v\.t\.)/i);
+                        if(match) {
+                            const id = match[1];
+                            const answer = match[2].toLowerCase().replace('n.v.t.', 'na');
+                            const radio = document.querySelector(`input[name="answer-${id}"][value="${answer}"]`);
+                            if(radio) {
+                                radio.checked = true;
+                                // Trigger change to apply conditional logic
+                                radio.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        }
+                    });
+                    showToast("Dossier geïmporteerd.");
+                };
+                reader.readAsText(file);
+                event.target.value = ''; // Reset file input
+            }
+
+
+            // --- Utility & Parsing Functions ---
+
+            function setActiveButton(activeButton, selector) {
+                document.querySelectorAll(selector).forEach(btn => btn.classList.remove('active'));
+                if (activeButton) activeButton.classList.add('active');
+            }
+
+            function parseMarkdownToList(markdown) {
+                const lines = markdown.split('\n');
+                const questions = [];
+                const stack = [{ children: questions, level: -1 }];
+                const headingRegex = /^##\s+(.*)/, mainQRegex = /^(\d+)\.\s*(.*)/, subQRegex = /^\s+([a-zA-Z])\.\s*(.*)/, detailQRegex = /^\s+-\s*(.*)/;
+
+                lines.forEach(line => {
+                    let match;
+                    if ((match = line.match(headingRegex))) {
+                        questions.push({ isHeading: true, text: match[1].trim() });
+                        stack.length = 1;
+                    } else if ((match = line.match(mainQRegex))) {
+                        let text = match[2].trim();
+                        const condition = parseCondition(text);
+                        if (condition) text = text.replace(/Zo nee,.*|Zo ja,.*/i, '').trim();
+                        const question = { id: match[1], text, children: [], condition, level: 0 };
+                        questions.push(question);
+                        stack.length = 1; 
+                        stack.push(question);
+                    } else if ((match = line.match(subQRegex))) {
+                        while (stack.length > 2 && stack[stack.length - 1].level >= 1) { stack.pop(); }
+                        const parent = stack[stack.length - 1];
+                        const id = `${parent.id}${match[1]}`;
+                        const question = { id, text: match[2].trim(), children: [], level: parent.level + 1 };
+                        parent.children.push(question);
+                        stack.push(question);
+                    } else if ((match = line.match(detailQRegex))) {
+                         const parent = stack[stack.length - 1];
+                         const id = `${parent.id}-${parent.children.length + 1}`;
+                         parent.children.push({ id, text: match[1].trim(), level: parent.level + 1, isDetail: true });
+                    }
+                });
+                return questions;
+            }
+
+            function parseMarkdownFromTable(markdown) {
+                const lines = markdown.split('\n');
+                const questions = [];
+                const vpbQRegex = /^\|\s*(\d+)\s*\|([^|]+)\|/, headingRegex = /^##\s+(.*)/;
+                lines.forEach(line => {
+                    let match;
+                    if ((match = line.match(headingRegex))) {
+                        questions.push({ isHeading: true, text: match[1].trim() });
+                    } else if ((match = line.match(vpbQRegex))) {
+                        questions.push({ id: match[1].trim(), text: match[2].trim().replace(/<br>/g, ' '), children: [], level: 0 });
+                    }
+                });
+                return questions;
+            }
+
+            function parseCondition(text) {
+                const skipMatch = text.match(/Zo (nee|ja)[\s,:]*(?:ga naar vraag|ga naar)\s*(\d+)/i);
+                if (skipMatch) return { on: skipMatch[1].toLowerCase(), action: 'skip', target: skipMatch[2] };
+                if (/Zo nee, ga naar vraag \d+/.test(text)) return { on: 'no', action: 'hide_children' };
+                return null;
+            }
+
+            function renderQuestions(questions, container, type) {
+                questions.forEach(q => container.appendChild(createQuestionElement(q, type)));
+            }
+
+            function createQuestionElement(q, type) {
+                if (q.isHeading) {
+                    const heading = document.createElement('h2');
+                    heading.className = 'werkprogramma-heading';
+                    heading.textContent = q.text;
+                    return heading;
+                }
+                
+                const hasChildren = q.children && q.children.length > 0;
+                const questionWrapper = document.createElement(hasChildren ? 'details' : 'div');
+                questionWrapper.className = 'question-container py-4 border-b border-gray-200';
+                questionWrapper.id = `question-${q.id}`;
+                questionWrapper.dataset.questionId = q.id;
+
+                const contentWrapper = document.createElement(hasChildren ? 'summary' : 'div');
+                
+                const questionText = document.createElement('p');
+                questionText.className = 'font-semibold text-gray-700 inline';
+                questionText.textContent = q.isDetail ? q.text : `${q.id}. ${q.text}`;
+                contentWrapper.appendChild(questionText);
+
+                if (!q.isDetail) {
+                    const radioContainer = document.createElement('div');
+                    radioContainer.className = 'mt-2 flex items-center gap-x-6';
+                    radioContainer.innerHTML = `
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="yes" class="form-radio h-4 w-4 text-blue-600"><span>Ja</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="no" class="form-radio h-4 w-4 text-blue-600"><span>Nee</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="na" class="form-radio h-4 w-4 text-blue-600" checked><span>N.v.t.</span></label>
+                    `;
+                    if (type === 'ib' || type === 'client') {
+                        radioContainer.addEventListener('change', (e) => handleAnswerChange(questionWrapper, q, e.target.value));
+                    }
+                    contentWrapper.appendChild(radioContainer);
+                }
+                
+                const uploadContainer = document.createElement('div');
+                uploadContainer.className = 'mt-3 flex items-center gap-x-2';
+                uploadContainer.innerHTML = `
+                    <input type="file" id="file-${q.id}" class="text-sm text-gray-500 file:mr-4 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                    <button class="upload-btn text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded-md">Upload</button>
+                    <span id="upload-status-${q.id}" class="text-xs text-green-600"></span>
+                `;
+                uploadContainer.querySelector('.upload-btn').addEventListener('click', () => handleFileUpload(q.id));
+                contentWrapper.appendChild(uploadContainer);
+                questionWrapper.appendChild(contentWrapper);
+
+                if (hasChildren) {
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.className = 'sub-question';
+                    renderQuestions(q.children, childrenContainer, type);
+                    questionWrapper.appendChild(childrenContainer);
+                }
+                return questionWrapper;
+            }
+            
+            function handleAnswerChange(element, question, answer) {
+                const condition = question.condition;
+                if (!condition) return;
+                const shouldTrigger = (condition.on === answer);
+                if (condition.action === 'hide_children') {
+                    shouldTrigger ? element.removeAttribute('open') : element.setAttribute('open', '');
+                } else if (condition.action === 'skip') {
+                    const allQuestions = document.querySelectorAll('.question-container');
+                    const startSkipId = parseInt(question.id, 10) + 1, endSkipId = parseInt(condition.target, 10);
+                    allQuestions.forEach(el => {
+                        const currentId = parseInt(el.dataset.questionId, 10);
+                        if (currentId >= startSkipId && currentId < endSkipId) el.classList.toggle('hidden', shouldTrigger);
+                    });
+                }
+            }
+            
+            function handleFileUpload(questionId) {
+                const apiKey = document.getElementById('api-key-input').value;
+                if (!apiKey) {
+                    showToast("Fout: AuditCase API Key ontbreekt.");
+                    return;
+                }
+                const fileInput = document.getElementById(`file-${questionId}`), statusEl = document.getElementById(`upload-status-${questionId}`);
+                if (fileInput.files.length > 0) {
+                    statusEl.textContent = 'Uploading...';
+                    setTimeout(() => { 
+                        statusEl.textContent = `✔ ${fileInput.files[0].name} uploaded.`; 
+                        showToast(`Bestand ${fileInput.files[0].name} verzonden naar AuditCase.`);
+                    }, 1000);
+                } else {
+                    showToast("Selecteer eerst een bestand.");
+                }
+            }
+            
+            function showToast(message) {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+
+            // --- Initialize the App ---
+            init();
+        });
     </script>
 </body>
 </html>
