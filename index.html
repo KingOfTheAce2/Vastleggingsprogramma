@@ -7,10 +7,17 @@
 </head>
 <body>
   <h1>Vastleggingsprogramma Demo</h1>
-  <p>This page demonstrates a basic front-end that will later connect to the AuditCase API.</p>
-  <button id="load-ib">Load IB Program</button>
-  <button id="load-vpb">Load VPB Program</button>
-  <pre id="output"></pre>
+  <p>Kies een klant en laad een werkprogramma.</p>
+  <select id="client-select">
+    <option value="">Selecteer klant</option>
+    <option value="testklant1">Testklant 1</option>
+    <option value="testklant2">Testklant 2 B.V.</option>
+  </select>
+  <div id="program-buttons">
+    <button id="load-ib" disabled>Laad IB Programma</button>
+    <button id="load-vpb" disabled>Laad VPB Programma</button>
+  </div>
+  <div id="work-area"></div>
   <script src="script.js"></script>
 </body>
 </html>
