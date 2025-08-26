@@ -123,3 +123,7 @@ AVG by design, minimaliseer persoonsgegevens en definieer bewaartermijnen
 Documenten worden versleuteld opgeslagen, transport via TLS
 Alle acties worden in AuditLog vastgelegd
 Gebruik secrets via environment variables en rotation
+
+## GitHub Pages demo
+
+The file `index.html` with accompanying `script.js` demonstrates a minimal web page for testing in GitHub Pages. It includes a placeholder for future integration with the AuditCase API.
