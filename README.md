@@ -5,6 +5,8 @@ Vastleggingsprogramma voor fiscale aangiftes inkomstenbelasting en vennootschaps
 2. **Vastleggingsprogramma** workflow en audit trail voor IB en VPB
 3. **Reviewer-only** afsluiten en vergrendelen van dossiers voor iedereen behalve reviewers
 
+Het bestand `werkprogramma_inkomstenbelasting.md` bevat een sjabloon voor het werkprogramma inkomstenbelasting.
+
 ## Kernfeatures
 
 - KYC en onboarding met bewijsstukken, UBO vastlegging, PEP en sanctiechecks als extensie
