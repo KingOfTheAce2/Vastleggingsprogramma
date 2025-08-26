@@ -1,4 +1,3 @@
-
 # Authenticatie Aanpassing
 
 Starting with version 19.4, **AuditCase** will use a new authentication method for its API due to an upcoming application server update. This update includes a more robust encryption algorithm.
