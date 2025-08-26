@@ -77,34 +77,12 @@
             pointer-events: none;
             opacity: 0.6;
         }
-        /* Login screen styles */
-        #login-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
 
-    <!-- Login Screen -->
-    <div id="login-screen">
-        <div class="bg-white p-8 rounded-lg shadow-md text-center w-full max-w-sm">
-            <h1 class="text-2xl font-bold text-gray-800 mb-4">Inloggen</h1>
-            <p class="text-gray-600 mb-6">Selecteer een gebruiker om in te loggen.</p>
-            <select id="user-select" class="w-full p-2 border border-gray-300 rounded-md mb-4">
-                <!-- Users will be populated here -->
-            </select>
-            <button id="btn-login" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
-                Login
-            </button>
-        </div>
-    </div>
-    
-    <!-- Main Application Container (initially hidden) -->
-    <div id="app-container" class="hidden">
+    <!-- Main Application Container -->
+    <div id="app-container">
         <!-- Dashboard Screen -->
         <div id="dashboard-screen" class="container mx-auto p-4 md:p-8">
              <header class="bg-white p-6 rounded-lg shadow-md">
@@ -434,12 +412,8 @@
 
             // --- DOM Element References ---
             const dom = {
-                loginScreen: document.getElementById('login-screen'),
-                appContainer: document.getElementById('app-container'),
                 dashboardScreen: document.getElementById('dashboard-screen'),
                 werkprogrammaScreen: document.getElementById('werkprogramma-screen'),
-                userSelect: document.getElementById('user-select'),
-                btnLogin: document.getElementById('btn-login'),
                 btnLogout: document.getElementById('btn-logout'),
                 userDisplayDashboard: document.getElementById('user-display-dashboard'),
                 userDisplayWerkprogramma: document.getElementById('user-display-werkprogramma'),
@@ -482,16 +456,18 @@
 
             // --- Initialization ---
             function init() {
-                Object.keys(users).forEach(userId => {
-                    dom.userSelect.appendChild(new Option(users[userId].name, userId));
-                });
-                
+                const storedUserId = localStorage.getItem('currentUser');
+                if (!storedUserId || !users[storedUserId]) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                currentUser = users[storedUserId];
+
                 const currentYear = new Date().getFullYear();
                 availableYears = [currentYear, currentYear - 1, currentYear - 2];
                 populateFiscalYears();
-                
+
                 // Event Listeners
-                dom.btnLogin.addEventListener('click', handleLogin);
                 dom.btnLogout.addEventListener('click', handleLogout);
                 dom.btnAddYear.addEventListener('click', handleAddYear);
                 dom.btnIb.addEventListener('click', () => setupClientSelection('ib'));
@@ -503,7 +479,7 @@
                 dom.btnBackToDashboard.addEventListener('click', showDashboard);
                 dom.btnExport.addEventListener('click', handleExport);
                 dom.importFile.addEventListener('change', handleImport);
-                
+
                 // Action button listeners
                 dom.btnSubmit.addEventListener('click', () => updateDossierStatus('ingediend', 'Dossier ingediend.'));
                 dom.btnReview.addEventListener('click', () => updateDossierStatus('gereviewd', 'Dossier gereviewd.'));
@@ -517,6 +493,12 @@
                         showToast("Een reden is verplicht om het dossier te heropenen.");
                     }
                 });
+
+                dom.userDisplayDashboard.textContent = `Ingelogd als: ${currentUser.name}`;
+                dom.userDisplayWerkprogramma.textContent = `Ingelogd als: ${currentUser.name}`;
+                dom.btnAddYear.classList.toggle('hidden', !permissions[currentUser.role].canAddYear);
+
+                showDashboard();
             }
 
             // --- Core Functions ---
@@ -528,25 +510,10 @@
                 });
             }
 
-            function handleLogin() {
-                const selectedUserId = dom.userSelect.value;
-                if (!selectedUserId) return;
-                currentUser = users[selectedUserId];
-                
-                dom.loginScreen.classList.add('hidden');
-                dom.appContainer.classList.remove('hidden');
-                showDashboard();
-                dom.userDisplayDashboard.textContent = `Ingelogd als: ${currentUser.name}`;
-                dom.userDisplayWerkprogramma.textContent = `Ingelogd als: ${currentUser.name}`;
-                dom.btnAddYear.classList.toggle('hidden', !permissions[currentUser.role].canAddYear);
-            }
-            
             function handleLogout() {
                 currentUser = null;
-                dom.appContainer.classList.add('hidden');
-                dom.loginScreen.classList.remove('hidden');
-                dom.clientSelectionContainer.classList.add('hidden');
-                setActiveButton(null, '.program-btn');
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
             }
 
             function handleAddYear() {
