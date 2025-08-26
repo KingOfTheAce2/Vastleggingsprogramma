@@ -1,0 +1,83 @@
+/* Simple transition for showing/hiding elements */
+.hidden {
+  display: none;
+}
+.sub-question {
+  padding-left: 1.5rem;
+  border-left: 2px solid #e5e7eb;
+  margin-left: 0.5rem;
+}
+/* Style for active buttons */
+.program-btn.active,
+.tab-btn.active {
+  font-weight: 600;
+}
+.program-btn.active {
+  background-color: #2563eb;
+  color: white;
+}
+.tab-btn.active {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+/* Custom styles for headings and details/summary */
+.werkprogramma-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid #d1d5db;
+}
+details > summary {
+  cursor: pointer;
+  list-style: none; /* Remove default marker */
+}
+details > summary::-webkit-details-marker {
+  display: none; /* Remove default marker for Chrome */
+}
+details > summary::before {
+  content: '▶';
+  margin-right: 0.5rem;
+  font-size: 0.8em;
+  display: inline-block;
+  transition: transform 0.2s;
+}
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+/* Mock Toast/Notification Style */
+#toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  background-color: #2d3748;
+  color: white;
+  font-size: 1rem;
+  z-index: 100;
+  opacity: 0;
+  transition:
+    opacity 0.3s,
+    bottom 0.3s;
+}
+#toast.show {
+  opacity: 1;
+  bottom: 30px;
+}
+/* Disabled state for the form */
+#form-fieldset:disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}
+/* Login screen layout */
+#login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
