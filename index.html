@@ -119,16 +119,23 @@
                     </div>
                 </div>
                 <div class="mt-4 border-t pt-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">1. Kies Werkprogramma</label>
+                            <label class="block text-sm font-medium text-gray-700">1. Kies Fiscaal Jaar</label>
+                            <div class="flex items-center gap-2 mt-1">
+                                <select id="fiscal-year-select" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"></select>
+                                <button id="btn-add-year" class="hidden bg-green-500 text-white p-2 rounded-md hover:bg-green-600 transition text-sm">+</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">2. Kies Werkprogramma</label>
                             <div class="mt-1 flex space-x-2">
                                 <button id="btn-ib" class="program-btn flex-1 py-2 px-4 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition">IB</button>
                                 <button id="btn-vpb" class="program-btn flex-1 py-2 px-4 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition">VPB</button>
                             </div>
                         </div>
                         <div id="client-selection-container" class="hidden">
-                            <label for="client-select" class="block text-sm font-medium text-gray-700">2. Kies Cliënt</label>
+                            <label for="client-select" class="block text-sm font-medium text-gray-700">3. Kies Cliënt</label>
                             <select id="client-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
                                 <option value="">-- Selecteer --</option>
                             </select>
@@ -158,7 +165,7 @@
                     <div class="flex items-center gap-4">
                         <div class="text-sm">
                             <p class="font-semibold" id="user-display-werkprogramma"></p>
-                            <input type="text" id="api-key-input" placeholder="AuditCase API Key" class="mt-1 text-xs p-1 border rounded-md w-48">
+                            <input type="text" id="api-key-input" placeholder="X-API-KEY (AuditCase)" class="mt-1 text-xs p-1 border rounded-md w-48">
                         </div>
                         <div class="flex items-center gap-2">
                              <input type="file" id="import-file" class="hidden" accept=".txt">
@@ -423,6 +430,7 @@
             let currentProgram = null;
             let currentUser = null;
             let dossierStatus = 'open'; // 'open', 'ingediend', 'gereviewd', 'afgesloten'
+            let availableYears = [];
 
             // --- DOM Element References ---
             const dom = {
@@ -436,6 +444,8 @@
                 userDisplayDashboard: document.getElementById('user-display-dashboard'),
                 userDisplayWerkprogramma: document.getElementById('user-display-werkprogramma'),
                 apiKeyInput: document.getElementById('api-key-input'),
+                fiscalYearSelect: document.getElementById('fiscal-year-select'),
+                btnAddYear: document.getElementById('btn-add-year'),
                 btnIb: document.getElementById('btn-ib'),
                 btnVpb: document.getElementById('btn-vpb'),
                 clientSelectionContainer: document.getElementById('client-selection-container'),
@@ -465,9 +475,9 @@
                 vpb: ["Test B.V.", "Test 2 B.V.", "Holding X B.V."]
             };
             const permissions = {
-                opsteller: { canSubmit: true, canReview: false, canClose: false, canReopen: false },
-                reviewer: { canSubmit: true, canReview: true, canClose: true, canReopen: true },
-                admin: { canSubmit: true, canReview: true, canClose: true, canReopen: true }
+                opsteller: { canSubmit: true, canReview: false, canClose: false, canReopen: false, canAddYear: false },
+                reviewer: { canSubmit: true, canReview: true, canClose: true, canReopen: true, canAddYear: true },
+                admin: { canSubmit: true, canReview: true, canClose: true, canReopen: true, canAddYear: true }
             };
 
             // --- Initialization ---
@@ -476,9 +486,14 @@
                     dom.userSelect.appendChild(new Option(users[userId].name, userId));
                 });
                 
+                const currentYear = new Date().getFullYear();
+                availableYears = [currentYear, currentYear - 1, currentYear - 2];
+                populateFiscalYears();
+                
                 // Event Listeners
                 dom.btnLogin.addEventListener('click', handleLogin);
                 dom.btnLogout.addEventListener('click', handleLogout);
+                dom.btnAddYear.addEventListener('click', handleAddYear);
                 dom.btnIb.addEventListener('click', () => setupClientSelection('ib'));
                 dom.btnVpb.addEventListener('click', () => setupClientSelection('vpb'));
                 dom.clientSelect.addEventListener('change', () => {
@@ -496,7 +511,7 @@
                 dom.btnReopen.addEventListener('click', () => {
                     const reason = prompt("Reden voor heropenen:");
                     if (reason && reason.trim() !== "") {
-                        console.log(`Dossier heropend door ${currentUser.name}. Reden: ${reason}`);
+                        console.log(`MOCK AUDIT TRAIL: Dossier heropend door ${currentUser.name}. Reden: ${reason}`);
                         updateDossierStatus('open', 'Dossier heropend.');
                     } else if (reason !== null) {
                         showToast("Een reden is verplicht om het dossier te heropenen.");
@@ -505,6 +520,13 @@
             }
 
             // --- Core Functions ---
+
+            function populateFiscalYears() {
+                dom.fiscalYearSelect.innerHTML = '';
+                availableYears.sort((a, b) => b - a).forEach(year => {
+                    dom.fiscalYearSelect.appendChild(new Option(year, year));
+                });
+            }
 
             function handleLogin() {
                 const selectedUserId = dom.userSelect.value;
@@ -516,15 +538,33 @@
                 showDashboard();
                 dom.userDisplayDashboard.textContent = `Ingelogd als: ${currentUser.name}`;
                 dom.userDisplayWerkprogramma.textContent = `Ingelogd als: ${currentUser.name}`;
+                dom.btnAddYear.classList.toggle('hidden', !permissions[currentUser.role].canAddYear);
             }
             
             function handleLogout() {
                 currentUser = null;
                 dom.appContainer.classList.add('hidden');
                 dom.loginScreen.classList.remove('hidden');
-                // Reset state
                 dom.clientSelectionContainer.classList.add('hidden');
                 setActiveButton(null, '.program-btn');
+            }
+
+            function handleAddYear() {
+                const latestYear = Math.max(...availableYears);
+                const newYear = prompt("Voer het nieuwe fiscale jaar in:", latestYear + 1);
+                if (newYear && !isNaN(newYear) && newYear > 1900) {
+                    const year = parseInt(newYear, 10);
+                    if (availableYears.includes(year)) {
+                        showToast(`Fiscaal jaar ${year} bestaat al.`);
+                        return;
+                    }
+                    availableYears.push(year);
+                    populateFiscalYears();
+                    dom.fiscalYearSelect.value = year;
+                    showToast(`Fiscaal jaar ${year} aangemaakt. Commentaren met 'doorrol' optie zijn (gesimuleerd) overgenomen.`);
+                } else if (newYear !== null) {
+                    showToast("Ongeldig jaartal ingevoerd.");
+                }
             }
 
             function showDashboard() {
@@ -536,8 +576,8 @@
                 if (!currentProgram || !dom.clientSelect.value) return;
                 dom.dashboardScreen.classList.add('hidden');
                 dom.werkprogrammaScreen.classList.remove('hidden');
-                dossierStatus = 'open'; // Reset status for new client
-                loadAndRenderWorkProgram(currentProgram, dom.clientSelect.value);
+                dossierStatus = 'open';
+                loadAndRenderWorkProgram(currentProgram, dom.clientSelect.value, dom.fiscalYearSelect.value);
             }
 
             function setupClientSelection(programType) {
@@ -582,9 +622,9 @@
                 dom.btnReopen.classList.toggle('hidden', !rolePerms.canReopen || !isLocked);
             }
 
-            async function loadAndRenderWorkProgram(type, clientName) {
+            async function loadAndRenderWorkProgram(type, clientName, fiscalYear) {
                 dom.werkprogrammaContainer.innerHTML = `<div class="text-center p-8"><p class="text-gray-500">Werkprogramma wordt geladen...</p></div>`;
-                dom.headerSubtitle.textContent = `Werkprogramma ${type.toUpperCase()} voor ${clientName}`;
+                dom.headerSubtitle.textContent = `Werkprogramma ${type.toUpperCase()} voor ${clientName} - Fiscaal Jaar ${fiscalYear}`;
 
                 try {
                     await new Promise(resolve => setTimeout(resolve, 200));
@@ -634,22 +674,30 @@
             // --- Import/Export Functions ---
             function handleExport() {
                 let content = `# Werkprogramma ${currentProgram.toUpperCase()} - ${dom.clientSelect.value}\n`;
+                content += `# Fiscaal Jaar: ${dom.fiscalYearSelect.value}\n`;
                 content += `# Status: ${dossierStatus}\n\n`;
 
                 document.querySelectorAll('.question-container').forEach(q => {
                     const id = q.dataset.questionId;
+                    if (!id) return;
                     const text = q.querySelector('p').textContent.replace(`${id}. `, '');
                     const checkedRadio = q.querySelector(`input[name="answer-${id}"]:checked`);
+                    const comment = q.querySelector(`#comment-${id}`).value;
+                    const rollover = q.querySelector(`#comment-rollover-${id}`).checked;
+
                     if(checkedRadio) {
                         const answer = checkedRadio.parentElement.textContent.trim();
-                        content += `${id}. ${text}: ${answer}\n`;
+                        content += `${id}. ${text}\n`;
+                        content += `   Antwoord: ${answer}\n`;
+                        content += `   Commentaar: ${comment}\n`;
+                        content += `   Doorrollen: ${rollover ? 'Ja' : 'Nee'}\n\n`;
                     }
                 });
                 
-                const blob = new Blob([content], { type: 'text/plain' });
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = `werkprogramma-${dom.clientSelect.value.replace(/ /g, '_')}.txt`;
+                a.download = `werkprogramma-${dom.clientSelect.value.replace(/ /g, '_')}-${dom.fiscalYearSelect.value}.txt`;
                 a.click();
                 URL.revokeObjectURL(a.href);
                 showToast("Dossier geëxporteerd.");
@@ -663,17 +711,25 @@
                 reader.onload = (e) => {
                     const content = e.target.result;
                     const lines = content.split('\n');
+                    let currentId = null;
+
                     lines.forEach(line => {
-                        const match = line.match(/^([0-9a-zA-Z]+)\..*:\s(Ja|Nee|N\.v\.t\.)/i);
-                        if(match) {
-                            const id = match[1];
-                            const answer = match[2].toLowerCase().replace('n.v.t.', 'na');
-                            const radio = document.querySelector(`input[name="answer-${id}"][value="${answer}"]`);
+                        let match;
+                        if ((match = line.match(/^([0-9a-zA-Z]+)\./))) {
+                            currentId = match[1];
+                        } else if (currentId && (match = line.match(/^\s+Antwoord:\s(Ja|Nee|N\.v\.t\.)/i))) {
+                            const answer = match[1].toLowerCase().replace('n.v.t.', 'na');
+                            const radio = document.querySelector(`input[name="answer-${currentId}"][value="${answer}"]`);
                             if(radio) {
                                 radio.checked = true;
-                                // Trigger change to apply conditional logic
                                 radio.dispatchEvent(new Event('change', { bubbles: true }));
                             }
+                        } else if (currentId && (match = line.match(/^\s+Commentaar:\s(.*)/))) {
+                            const commentEl = document.getElementById(`comment-${currentId}`);
+                            if(commentEl) commentEl.value = match[1];
+                        } else if (currentId && (match = line.match(/^\s+Doorrollen:\s(Ja|Nee)/i))) {
+                            const rolloverEl = document.getElementById(`comment-rollover-${currentId}`);
+                            if(rolloverEl) rolloverEl.checked = match[1].toLowerCase() === 'ja';
                         }
                     });
                     showToast("Dossier geïmporteerd.");
@@ -681,7 +737,6 @@
                 reader.readAsText(file);
                 event.target.value = ''; // Reset file input
             }
-
 
             // --- Utility & Parsing Functions ---
 
@@ -786,6 +841,18 @@
                     contentWrapper.appendChild(radioContainer);
                 }
                 
+                // Comment and Rollover section
+                const commentContainer = document.createElement('div');
+                commentContainer.className = 'mt-3 space-y-2';
+                commentContainer.innerHTML = `
+                    <textarea id="comment-${q.id}" class="w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="Voeg commentaar toe..."></textarea>
+                    <label class="flex items-center space-x-2 cursor-pointer text-sm text-gray-600">
+                        <input type="checkbox" id="comment-rollover-${q.id}" class="form-checkbox h-4 w-4 text-blue-600 rounded">
+                        <span>Commentaar overnemen naar volgend jaar</span>
+                    </label>
+                `;
+                contentWrapper.appendChild(commentContainer);
+
                 const uploadContainer = document.createElement('div');
                 uploadContainer.className = 'mt-3 flex items-center gap-x-2';
                 uploadContainer.innerHTML = `
@@ -825,7 +892,8 @@
             function handleFileUpload(questionId) {
                 const apiKey = document.getElementById('api-key-input').value;
                 if (!apiKey) {
-                    showToast("Fout: AuditCase API Key ontbreekt.");
+                    showToast("Fout: AuditCase X-API-KEY ontbreekt.");
+                    console.error("MOCK API CALL FAILED: Status 400 (Bad Request) - X-API-KEY header is missing.");
                     return;
                 }
                 const fileInput = document.getElementById(`file-${questionId}`), statusEl = document.getElementById(`upload-status-${questionId}`);
@@ -834,6 +902,8 @@
                     setTimeout(() => { 
                         statusEl.textContent = `✔ ${fileInput.files[0].name} uploaded.`; 
                         showToast(`Bestand ${fileInput.files[0].name} verzonden naar AuditCase.`);
+                        console.log(`MOCK API CALL: POST /ac/api/document/dossier/create/... with X-API-KEY: ${apiKey.substring(0,8)}...`);
+                        console.log(`MOCK API RESPONSE: Status 201 (Created)`);
                     }, 1000);
                 } else {
                     showToast("Selecteer eerst een bestand.");
