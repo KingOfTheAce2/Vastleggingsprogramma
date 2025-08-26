@@ -1,23 +1,339 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vastleggingsprogramma Trial</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Werkprogramma IB & VPB</title>
+    <!-- Using Tailwind CSS for a clean, modern look -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple transition for showing/hiding questions */
+        .question-container.hidden {
+            display: none;
+        }
+        .sub-question {
+            padding-left: 2rem; /* Indent sub-questions */
+            border-left: 2px solid #e5e7eb; /* Add a visual indicator for nesting */
+            margin-left: 0.5rem;
+        }
+        /* Style for the active program button */
+        .program-btn.active {
+            background-color: #2563eb;
+            color: white;
+            font-weight: 600;
+        }
+    </style>
 </head>
-<body>
-  <h1>Vastleggingsprogramma Demo</h1>
-  <p>Kies een klant en laad een werkprogramma.</p>
-  <select id="client-select">
-    <option value="">Selecteer klant</option>
-    <option value="testklant1">Testklant 1</option>
-    <option value="testklant2">Testklant 2 B.V.</option>
-  </select>
-  <div id="program-buttons">
-    <button id="load-ib" disabled>Laad IB Programma</button>
-    <button id="load-vpb" disabled>Laad VPB Programma</button>
-  </div>
-  <div id="work-area"></div>
-  <script src="script.js"></script>
+<body class="bg-gray-100 font-sans">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Dynamisch Werkprogramma</h1>
+            <p class="text-gray-600 mt-2">Selecteer een werkprogramma om te beginnen.</p>
+            
+            <!-- Buttons to switch between IB and VPB programs -->
+            <div class="mt-4 flex space-x-4">
+                <button id="btn-ib" class="program-btn flex-1 py-2 px-4 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+                    Inkomstenbelasting (IB)
+                </button>
+                <button id="btn-vpb" class="program-btn flex-1 py-2 px-4 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+                    Vennootschapsbelasting (VPB)
+                </button>
+            </div>
+        </header>
+
+        <main id="werkprogramma-container" class="bg-white p-6 rounded-lg shadow-md min-h-[200px]">
+            <div id="welcome-message" class="text-center p-8">
+                <h2 class="text-xl font-semibold text-gray-700">Welkom!</h2>
+                <p class="text-gray-500 mt-2">Kies hierboven een werkprogramma om de vragenlijst te laden.</p>
+            </div>
+            <div id="loader" class="text-center p-8 hidden">
+                <p class="text-gray-500">Werkprogramma wordt geladen...</p>
+            </div>
+            <!-- Questions will be dynamically inserted here -->
+        </main>
+
+        <footer class="text-center mt-8 text-gray-500">
+            <p>&copy; 2024 MVP Werkprogramma</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnIb = document.getElementById('btn-ib');
+            const btnVpb = document.getElementById('btn-vpb');
+
+            // Event listeners for the program selection buttons
+            btnIb.addEventListener('click', () => {
+                setActiveButton(btnIb);
+                loadAndRenderWorkProgram('ib');
+            });
+
+            btnVpb.addEventListener('click', () => {
+                setActiveButton(btnVpb);
+                loadAndRenderWorkProgram('vpb');
+            });
+        });
+        
+        // Object to store the markdown for both work programs
+        const WORK_PROGRAMS = {
+            ib: `
+# Werkprogramma opstellen aangifte inkomstenbelasting
+## Algemeen
+1. Is cliënt het hele jaar of een gedeelte van het jaar gehuwd? Zo nee, ga naar vraag 6
+2. Is cliënt gehuwd in gemeenschap van goederen?
+3. Onder huwelijkse voorwaarden (kopie in permanent dossier)?
+4. Is cliënt dit jaar gehuwd? Zo ja per welke datum?
+5. a. Is cliënt dit jaar gescheiden?
+   b. Zo ja, is een verzoek tot echtscheiding/scheiding tafel en bed ingediend?
+   c. Zo ja, is cliënt niet meer woonachtig op hetzelfde woonadres in het bevolkingsregister?
+6. Is cliënt ongehuwd samenwonend? Zo nee: ga naar vraag 12
+7. Is er een notarieel samenlevingscontract (kopie in permanent dossier)?
+8. Staat cliënt en partner op hetzelfde woonadres in het bevolkingsregister? Hele jaar?
+9. Is cliënt dit jaar gaan samenwonen? Vanaf wanneer?
+10. Is cliënt dit jaar uit elkaar gegaan? Vanaf wanneer?
+11. Hebben cliënt en partner samen kind of een kind erkend van de ander?
+12. Staat de partner van de cliënt als partner in diens pensioenregeling?
+13. Hebben cliënt en partner samen een eigen woning?
+14. Zijn gegevens kinderen ingevuld (geb. datum, bsn, voorletters) in FiscaalGemak?
+    a. Is aangegeven of sprake is van een thuiswonend kind (onderdeel heffingskortingen)?
+    b. Bij co-ouderschap: is beoordeeld of de inkomensafhankelijke combinatiekorting kan worden geclaimd bij de ouder waar het kind niet staat ingeschreven?
+15. Heeft cliënt een testament opgemaakt (kopie in permanent dossier)?
+## Verliesverrekening
+16. Is er sprake van verlies in voorgaande jaren? Zo nee, ga naar vraag 18
+17. Zijn de verliezen van voorgaande jaren goed ingevuld conform de verliesbeschikkingen en zijn de definitieve aanslagen in het dossier opgenomen?
+18. Is er dit jaar sprake van een verlies? Zo nee, ga naar vraag 20
+19. Is het belastbaar inkomen uit het verleden goed ingevuld conform de definitieve aanslagen?
+20. Nog te verrekenen persoonsgebonden aftrek voorgaande jaren? Zo ja, ingevuld in aangifte?
+## Box I aandachtspunten
+21. Is er sprake van winst uit onderneming? Zo nee, ga naar vraag 22
+    a. Jaarstukken
+       - Zijn alle jaarstukken ingevoerd?
+    b. Aangifte
+       - Voldoet cliënt aan urencriterium en licht toe waarom?
+22. Is er sprake van loon of inkomen uit vroegere dienstbetrekking? Zo nee, ga naar vraag 23
+    - Jaaropgaven in dossier?
+23. Is er sprake van resultaat uit overige werkzaamheden? Zo nee, ga naar vraag 24
+    - Jaaropgaven in dossier
+## Box II aandachtspunten
+27. Is er sprake van een aanmerkelijk belang? Zo nee, ga naar vraag 28
+    a. Regulier voordeel?
+       - Aangifte(n) dividendbelasting in dossier?
+`,
+            vpb: `
+# Werkprogramma opstellen aangifte vennootschapsbelasting
+## Fiscale eenheid Vpb
+| 1 | Is er sprake van een fiscale eenheid Vpb? Zo ja, onderstaande vragen beantwoorden |
+| 2 | Zijn er ondernemingen gevoegd of ontvoegd in het boekjaar? |
+| 3 | Hebben er verschuivingen plaatsgevonden binnen de fiscale eenheid van vermogensbestanddelen of HIR? |
+## Concern
+| 4 | Is er sprake van een concern (meerdere bv's)? Zo ja, onderstaande vragen beantwoorden |
+| 5 | Vinden er transacties plaats binnen het concern/tussen gelieerde personen maar buiten de fiscale eenheid Vpb? |
+| 6 | Is er sprake van (een) concernfinanciering(en) buiten fiscale eenheid Vpb? |
+## Aandeelhouders en deelnemingen
+| 7 | Heeft de onderneming aandeelhouders? Zo ja, is de specificatie ingevuld? |
+| 8 | Heeft de onderneming deelnemingen? Zo ja, is de specificatie ingevuld? |
+## Jaarrekening(en)
+| 9 | Is de afschrijvingsstaat in het dossier opgenomen? |
+| 10 | Zijn de restwaarde en/of bodemwaarde ingevuld in de aangifte en beoordeeld? |
+`
+        };
+
+        /**
+         * Sets the visual style for the active program button.
+         * @param {HTMLElement} activeButton - The button element to be styled as active.
+         */
+        function setActiveButton(activeButton) {
+            document.querySelectorAll('.program-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            activeButton.classList.add('active');
+        }
+
+        /**
+         * Parses the markdown for the IB program (list format).
+         */
+        function parseIbProgram(markdown) {
+            const lines = markdown.split('\n');
+            const questions = [];
+            let currentMainQuestion = null, currentSubQuestion = null;
+            const mainQRegex = /^(\d+)\.\s*(.*)/, subQRegex = /^\s+([a-zA-Z])\.\s*(.*)/, detailQRegex = /^\s+-\s*(.*)/;
+
+            lines.forEach(line => {
+                let match;
+                if ((match = line.match(mainQRegex))) {
+                    const id = match[1];
+                    let text = match[2].trim();
+                    const condition = parseCondition(text);
+                    if (condition) text = text.replace(/Zo nee,.*|Zo ja,.*/i, '').trim();
+                    const question = { id, text, children: [], condition, level: 0 };
+                    questions.push(question);
+                    currentMainQuestion = question;
+                    currentSubQuestion = null;
+                } else if (currentMainQuestion && (match = line.match(subQRegex))) {
+                    const id = `${currentMainQuestion.id}${match[1]}`;
+                    const question = { id, text: match[2].trim(), children: [], level: 1 };
+                    currentMainQuestion.children.push(question);
+                    currentSubQuestion = question;
+                } else if ((currentSubQuestion || currentMainQuestion) && (match = line.match(detailQRegex))) {
+                    const parent = currentSubQuestion || currentMainQuestion;
+                    const id = `${parent.id}-${parent.children.length + 1}`;
+                    parent.children.push({ id, text: match[1].trim(), level: (parent.level || 0) + 1, isDetail: true });
+                }
+            });
+            return questions;
+        }
+
+        /**
+         * Parses the markdown for the VPB program (table format).
+         */
+        function parseVpbProgram(markdown) {
+            const lines = markdown.split('\n');
+            const questions = [];
+            const vpbQRegex = /^\|\s*(\d+)\s*\|([^|]+)\|/;
+            lines.forEach(line => {
+                const match = line.match(vpbQRegex);
+                if (match) {
+                    questions.push({
+                        id: match[1].trim(),
+                        text: match[2].trim(),
+                        children: [],
+                        level: 0
+                    });
+                }
+            });
+            return questions;
+        }
+        
+        /**
+         * Generic parser that delegates to the specific program parser.
+         */
+        function parseWorkProgram(markdown, type) {
+            if (type === 'ib') {
+                return parseIbProgram(markdown);
+            } else if (type === 'vpb') {
+                return parseVpbProgram(markdown);
+            }
+            return [];
+        }
+
+        /**
+         * Parses conditional logic text from IB questions.
+         */
+        function parseCondition(text) {
+            const skipMatch = text.match(/Zo (nee|ja)[\s,:]*(?:ga naar vraag|ga naar)\s*(\d+)/i);
+            if (skipMatch) {
+                return { on: skipMatch[1].toLowerCase(), action: 'skip', target: skipMatch[2] };
+            }
+            if (/Zo nee, ga naar vraag \d+/.test(text)) {
+                 return { on: 'no', action: 'hide_children' };
+            }
+            return null;
+        }
+
+        /**
+         * Renders the parsed questions into the DOM.
+         */
+        function renderQuestions(questions, container, type) {
+            container.innerHTML = '';
+            questions.forEach(q => {
+                container.appendChild(createQuestionElement(q, type));
+                if (q.children && q.children.length > 0) {
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.id = `children-of-${q.id}`;
+                    if (q.condition?.action === 'hide_children') {
+                         childrenContainer.classList.add('hidden');
+                    }
+                    childrenContainer.classList.add('sub-question');
+                    renderQuestions(q.children, childrenContainer, type);
+                    container.appendChild(childrenContainer);
+                }
+            });
+        }
+
+        /**
+         * Creates a single question element.
+         */
+        function createQuestionElement(q, type) {
+            const div = document.createElement('div');
+            div.className = 'question-container py-4 border-b border-gray-200';
+            div.id = `question-${q.id}`;
+            div.dataset.questionId = q.id;
+
+            const questionText = document.createElement('p');
+            questionText.className = 'font-semibold text-gray-700';
+            questionText.textContent = q.isDetail ? q.text : `${q.id}. ${q.text}`;
+            div.appendChild(questionText);
+
+            if (!q.isDetail) {
+                const radioContainer = document.createElement('div');
+                radioContainer.className = 'mt-2 flex items-center gap-x-6';
+                radioContainer.innerHTML = `
+                    <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="yes" class="form-radio h-4 w-4 text-blue-600"><span>Ja</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="no" class="form-radio h-4 w-4 text-blue-600"><span>Nee</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="answer-${q.id}" value="na" class="form-radio h-4 w-4 text-blue-600" checked><span>N.v.t.</span></label>
+                `;
+                if (type === 'ib') { // Conditional logic only applies to IB for now
+                    radioContainer.addEventListener('change', (e) => handleAnswerChange(q, e.target.value));
+                }
+                div.appendChild(radioContainer);
+            }
+            return div;
+        }
+        
+        /**
+         * Handles conditional logic for IB questions.
+         */
+        function handleAnswerChange(question, answer) {
+            const condition = question.condition;
+            if (!condition) return;
+            const shouldTrigger = (condition.on === answer);
+
+            if (condition.action === 'skip') {
+                const allQuestions = document.querySelectorAll('.question-container');
+                const startSkipId = parseInt(question.id, 10) + 1;
+                const endSkipId = parseInt(condition.target, 10);
+                allQuestions.forEach(el => {
+                    const currentId = parseInt(el.dataset.questionId, 10);
+                    if (currentId >= startSkipId && currentId < endSkipId) {
+                        el.classList.toggle('hidden', shouldTrigger);
+                        const childrenEl = document.getElementById(`children-of-${el.dataset.questionId}`);
+                        if(childrenEl) childrenEl.classList.toggle('hidden', shouldTrigger);
+                    }
+                });
+            } else if (condition.action === 'hide_children') {
+                const childrenContainer = document.getElementById(`children-of-${question.id}`);
+                if (childrenContainer) childrenContainer.classList.toggle('hidden', shouldTrigger);
+            }
+        }
+
+        /**
+         * Main function to orchestrate loading, parsing, and rendering.
+         */
+        async function loadAndRenderWorkProgram(type) {
+            const container = document.getElementById('werkprogramma-container');
+            const loader = document.getElementById('loader');
+            const welcomeMsg = document.getElementById('welcome-message');
+            
+            welcomeMsg.classList.add('hidden');
+            loader.classList.remove('hidden');
+            container.innerHTML = ''; // Clear content immediately
+            container.appendChild(loader);
+
+            try {
+                // Simulate a small delay for better user experience
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                const markdown = WORK_PROGRAMS[type];
+                const questions = parseWorkProgram(markdown, type);
+                
+                loader.classList.add('hidden');
+                renderQuestions(questions, container, type);
+            } catch (error) {
+                console.error(`Failed to load work program for ${type}:`, error);
+                container.innerHTML = '<p class="text-red-500 text-center">Fout bij het laden van het werkprogramma.</p>';
+            }
+        }
+    </script>
 </body>
 </html>
