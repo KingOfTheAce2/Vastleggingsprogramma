@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       sessionStorage.setItem('token', data.token);
       sessionStorage.setItem('currentUser', JSON.stringify(data.user));
-      window.location.href = 'index.html';
+      window.location.href = 'clients.html';
     } catch (err) {
       alert('Login mislukt');
     }

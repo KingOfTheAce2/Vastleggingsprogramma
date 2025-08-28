@@ -8,7 +8,6 @@
 - Reviewer:
 - Datum afwerking gereed (reviewer):
 - Belastingjaar:
-- Burgerservicenummer:
 - Verantwoordelijke fiscalist:
 - Datum afwerking gereed (fiscalist):
 
@@ -30,9 +29,6 @@
 11. Hebben cliënt en partner samen kind of een kind erkend van de ander?
 12. Staat de partner van de cliënt als partner in diens pensioenregeling?
 13. Hebben cliënt en partner samen een eigen woning?
-14. Zijn gegevens kinderen ingevuld (geb. datum, bsn, voorletters) in FiscaalGemak?
-    a. Is aangegeven of sprake is van een thuiswonend kind (onderdeel heffingskortingen)?
-    b. Bij co-ouderschap: is beoordeeld of de inkomensafhankelijke combinatiekorting kan worden geclaimd bij de ouder waar het kind niet staat ingeschreven?
 15. Heeft cliënt een testament opgemaakt (kopie in permanent dossier)?
 
 ## Verliesverrekening
