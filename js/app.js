@@ -103,7 +103,11 @@ document.addEventListener('DOMContentLoaded', () => {
       dom.btnOpenWerkprogramma.disabled = !dom.clientSelect.value;
     });
     dom.btnOpenWerkprogramma.addEventListener('click', openWerkprogramma);
-    dom.btnBackToDashboard.addEventListener('click', showDashboard);
+    dom.btnBackToDashboard.addEventListener('click', () => {
+      sessionStorage.removeItem('selectedClient');
+      sessionStorage.removeItem('selectedProgram');
+      window.location.href = 'clients.html';
+    });
     dom.btnExport.addEventListener('click', handleExport);
     dom.importFile.addEventListener('change', handleImport);
 
@@ -135,7 +139,16 @@ document.addEventListener('DOMContentLoaded', () => {
       !permissions[currentUser.role].canAddYear,
     );
 
-    showDashboard();
+    const storedClient = sessionStorage.getItem('selectedClient');
+    const storedProgram = sessionStorage.getItem('selectedProgram');
+    if (storedClient && storedProgram) {
+      currentProgram = storedProgram;
+      dom.clientSelect.innerHTML = `<option value="${storedClient}" selected>${storedClient}</option>`;
+      dom.fiscalYearSelect.value = currentYear;
+      openWerkprogramma();
+    } else {
+      showDashboard();
+    }
   }
 
   // --- Core Functions ---
@@ -187,13 +200,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function openWerkprogramma() {
-    if (!currentProgram || !dom.clientSelect.value) return;
+    const clientName =
+      dom.clientSelect.value || sessionStorage.getItem('selectedClient');
+    if (!currentProgram || !clientName) return;
     dom.dashboardScreen.classList.add('hidden');
     dom.werkprogrammaScreen.classList.remove('hidden');
     dossierStatus = 'open';
     loadAndRenderWorkProgram(
       currentProgram,
-      dom.clientSelect.value,
+      clientName,
       dom.fiscalYearSelect.value,
     );
   }
@@ -316,33 +331,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Import/Export Functions ---
   function handleExport() {
-    let content = `# Werkprogramma ${currentProgram.toUpperCase()} - ${dom.clientSelect.value}\n`;
-    content += `# Fiscaal Jaar: ${dom.fiscalYearSelect.value}\n`;
-    content += `# Status: ${dossierStatus}\n\n`;
-
+    const rows = [
+      ['ID', 'Vraag', 'Antwoord', 'Commentaar', 'Doorrollen'],
+    ];
     document.querySelectorAll('.question-container').forEach((q) => {
       const id = q.dataset.questionId;
       if (!id) return;
-      const text = q.querySelector('p').textContent.replace(`${id}. `, '');
+      const text = q
+        .querySelector('p')
+        .textContent.replace(`${id}. `, '');
       const checkedRadio = q.querySelector(
         `input[name="answer-${id}"]:checked`,
       );
       const comment = q.querySelector(`#comment-${id}`).value;
       const rollover = q.querySelector(`#comment-rollover-${id}`).checked;
-
-      if (checkedRadio) {
-        const answer = checkedRadio.parentElement.textContent.trim();
-        content += `${id}. ${text}\n`;
-        content += `   Antwoord: ${answer}\n`;
-        content += `   Commentaar: ${comment}\n`;
-        content += `   Doorrollen: ${rollover ? 'Ja' : 'Nee'}\n\n`;
-      }
+      const answer = checkedRadio
+        ? checkedRadio.parentElement.textContent.trim()
+        : '';
+      rows.push([
+        id,
+        text,
+        answer,
+        comment,
+        rollover ? 'Ja' : 'Nee',
+      ]);
     });
 
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const csvContent = rows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;',
+    });
     const a = document.createElement('a');
+    const clientName = (
+      dom.clientSelect.value || sessionStorage.getItem('selectedClient') || ''
+    ).replace(/ /g, '_');
     a.href = URL.createObjectURL(blob);
-    a.download = `werkprogramma-${dom.clientSelect.value.replace(/ /g, '_')}-${dom.fiscalYearSelect.value}.txt`;
+    a.download = `werkprogramma-${clientName}-${dom.fiscalYearSelect.value}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
     showToast('Dossier geëxporteerd.');
@@ -354,37 +380,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const content = e.target.result;
-      const lines = content.split('\n');
-      let currentId = null;
-
+      const lines = e.target.result.split(/\r?\n/).slice(1);
       lines.forEach((line) => {
-        let match;
-        if ((match = line.match(/^([0-9a-zA-Z]+)\./))) {
-          currentId = match[1];
-        } else if (
-          currentId &&
-          (match = line.match(/^\s+Antwoord:\s(Ja|Nee|N\.v\.t\.)/i))
-        ) {
-          const answer = match[1].toLowerCase().replace('n.v.t.', 'na');
+        if (!line.trim()) return;
+        const values = line
+          .split(',')
+          .map((v) => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
+        const [id, , answer, comment, rollover] = values;
+        if (id) {
           const radio = document.querySelector(
-            `input[name="answer-${currentId}"][value="${answer}"]`,
+            `input[name="answer-${id}"][value="${answer
+              .toLowerCase()
+              .replace('n.v.t.', 'na')}"]`,
           );
           if (radio) {
             radio.checked = true;
             radio.dispatchEvent(new Event('change', { bubbles: true }));
           }
-        } else if (currentId && (match = line.match(/^\s+Commentaar:\s(.*)/))) {
-          const commentEl = document.getElementById(`comment-${currentId}`);
-          if (commentEl) commentEl.value = match[1];
-        } else if (
-          currentId &&
-          (match = line.match(/^\s+Doorrollen:\s(Ja|Nee)/i))
-        ) {
-          const rolloverEl = document.getElementById(
-            `comment-rollover-${currentId}`,
-          );
-          if (rolloverEl) rolloverEl.checked = match[1].toLowerCase() === 'ja';
+          const commentEl = document.getElementById(`comment-${id}`);
+          if (commentEl) commentEl.value = comment;
+          const rolloverEl = document.getElementById(`comment-rollover-${id}`);
+          if (rolloverEl) rolloverEl.checked = rollover.toLowerCase() === 'ja';
         }
       });
       showToast('Dossier geïmporteerd.');
@@ -463,10 +479,14 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadContainer.innerHTML = `
       <input type="file" id="file-${q.id}" class="text-sm text-gray-500 file:mr-4 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" aria-label="Upload bestand"/>
       <button class="upload-btn text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded-md">Upload</button>
+      <button id="preview-${q.id}" class="preview-btn hidden text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded-md">Preview</button>
       <span id="upload-status-${q.id}" class="text-xs text-green-600"></span>`;
     uploadContainer
       .querySelector('.upload-btn')
       .addEventListener('click', () => handleFileUpload(q.id));
+    uploadContainer
+      .querySelector(`#preview-${q.id}`)
+      .addEventListener('click', () => handleFilePreview(q.id));
     contentWrapper.appendChild(uploadContainer);
     questionWrapper.appendChild(contentWrapper);
 
@@ -499,31 +519,67 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function handleFileUpload(questionId) {
+  async function handleFileUpload(questionId) {
     const apiKey = document.getElementById('api-key-input').value;
     if (!apiKey) {
       showToast('Fout: AuditCase X-API-KEY ontbreekt.');
-      console.error(
-        'MOCK API CALL FAILED: Status 400 (Bad Request) - X-API-KEY header is missing.',
-      );
       return;
     }
     const fileInput = document.getElementById(`file-${questionId}`);
     const statusEl = document.getElementById(`upload-status-${questionId}`);
+    const previewBtn = document.getElementById(`preview-${questionId}`);
     if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
       statusEl.textContent = 'Uploading...';
-      setTimeout(() => {
-        statusEl.textContent = `✔ ${fileInput.files[0].name} uploaded.`;
-        showToast(
-          `Bestand ${fileInput.files[0].name} verzonden naar AuditCase.`,
-        );
-        console.log(
-          `MOCK API CALL: POST /ac/api/document/dossier/create/... with X-API-KEY: ${apiKey.substring(0, 8)}...`,
-        );
-        console.log('MOCK API RESPONSE: Status 201 (Created)');
-      }, 1000);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/ac/api/document/dossier/create', {
+          method: 'POST',
+          headers: { 'X-API-KEY': apiKey },
+          body: formData,
+        });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        statusEl.textContent = `✔ ${file.name} uploaded.`;
+        showToast(`Bestand ${file.name} verzonden naar AuditCase.`);
+        if (file.type === 'application/pdf') {
+          previewBtn.classList.remove('hidden');
+          if (data && data.id) {
+            previewBtn.dataset.docId = data.id;
+          } else {
+            previewBtn.dataset.localUrl = URL.createObjectURL(file);
+          }
+        }
+      } catch (err) {
+        statusEl.textContent = '';
+        showToast('Upload mislukt.');
+      }
     } else {
       showToast('Selecteer eerst een bestand.');
+    }
+  }
+
+  async function handleFilePreview(questionId) {
+    const apiKey = document.getElementById('api-key-input').value;
+    const btn = document.getElementById(`preview-${questionId}`);
+    const docId = btn.dataset.docId;
+    try {
+      if (docId) {
+        const res = await fetch(`/ac/api/document/${docId}`, {
+          headers: { 'X-API-KEY': apiKey },
+        });
+        if (!res.ok) throw new Error('Failed to fetch');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      } else if (btn.dataset.localUrl) {
+        window.open(btn.dataset.localUrl, '_blank');
+      } else {
+        showToast('Geen document beschikbaar.');
+      }
+    } catch (e) {
+      showToast('Voorbeeld laden mislukt.');
     }
   }
 
