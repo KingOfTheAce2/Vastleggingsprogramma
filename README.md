@@ -129,8 +129,8 @@ Gebruik secrets via environment variables en rotation
 Open `login.html` to sign in and then continue to `index.html` for the main application.
 Use one of the demo accounts:
 
-- `alice` / `password`
-- `bob` / `password`
-- `charlie` / `password`
+- `jan` / `password`
+- `piet` / `password`
+- `klaas` / `password`
 
 Wanneer er geen backend beschikbaar is, valt de loginpagina terug op deze lokale demo-accounts zodat je de UI kunt verkennen. Als de server draait (`npm start`), worden dezelfde gegevens gevalideerd via de API.
