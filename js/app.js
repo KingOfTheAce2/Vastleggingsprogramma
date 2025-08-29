@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = 'login.html';
       return;
     }
+    const storedUser = sessionStorage.getItem('currentUser');
     try {
       const res = await fetch('/api/me', {
         headers: { Authorization: `Bearer ${token}` },
@@ -85,9 +86,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error('Unauthorized');
       const data = await res.json();
       currentUser = data.user;
+      sessionStorage.setItem('currentUser', JSON.stringify(data.user));
     } catch (err) {
-      window.location.href = 'login.html';
-      return;
+      if (storedUser) {
+        currentUser = JSON.parse(storedUser);
+      } else {
+        window.location.href = 'login.html';
+        return;
+      }
     }
 
     const currentYear = new Date().getFullYear();

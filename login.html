@@ -18,16 +18,17 @@
             <label
               for="username"
               class="block text-sm font-medium text-gray-700"
-              >Gebruikersnaam</label
+              >Gebruiker</label
             >
-            <input
+            <select
               id="username"
-              type="text"
               class="w-full p-2 border border-gray-300 rounded-md"
-              aria-label="Gebruikersnaam"
-              value="alice"
-              required
-            />
+              aria-label="Gebruiker"
+            >
+              <option value="jan">Jan Jansen (Opsteller)</option>
+              <option value="piet">Piet de Boer (Reviewer)</option>
+              <option value="klaas">Klaas Visser (Admin)</option>
+            </select>
           </div>
           <div class="text-left">
             <label

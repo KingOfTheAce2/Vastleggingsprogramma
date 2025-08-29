@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   const fallbackUsers = {
-    alice: { password: 'password', name: 'Alice (Opsteller)', role: 'opsteller' },
-    bob: { password: 'password', name: 'Bob (Reviewer)', role: 'reviewer' },
-    charlie: { password: 'password', name: 'Charlie (Admin)', role: 'admin' },
+    jan: { password: 'password', name: 'Jan Jansen (Opsteller)', role: 'opsteller' },
+    piet: { password: 'password', name: 'Piet de Boer (Reviewer)', role: 'reviewer' },
+    klaas: { password: 'password', name: 'Klaas Visser (Admin)', role: 'admin' },
   };
 
   const form = document.getElementById('login-form');
