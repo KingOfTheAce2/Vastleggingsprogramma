@@ -126,4 +126,11 @@ Gebruik secrets via environment variables en rotation
 
 ## GitHub Pages demo
 
-Open `login.html` to choose a user and then continue to `index.html` for the main application. These static pages include a placeholder for future integration with the AuditCase API.
+Open `login.html` to sign in and then continue to `index.html` for the main application.
+Use one of the demo accounts:
+
+- `alice` / `password`
+- `bob` / `password`
+- `charlie` / `password`
+
+Wanneer er geen backend beschikbaar is, valt de loginpagina terug op deze lokale demo-accounts zodat je de UI kunt verkennen. Als de server draait (`npm start`), worden dezelfde gegevens gevalideerd via de API.
