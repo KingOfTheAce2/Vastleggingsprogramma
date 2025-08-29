@@ -16,14 +16,27 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-      if (!res.ok) {
-        alert('Login mislukt');
+
+      if (res.ok) {
+        const data = await res.json();
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+        window.location.href = 'clients.html';
         return;
       }
-      const data = await res.json();
-      sessionStorage.setItem('token', data.token);
-      sessionStorage.setItem('currentUser', JSON.stringify(data.user));
-      window.location.href = 'clients.html';
+
+      // Fallback to local demo users when API login fails
+      const user = fallbackUsers[username];
+      if (user && user.password === password) {
+        sessionStorage.setItem('token', 'local-token');
+        sessionStorage.setItem(
+          'currentUser',
+          JSON.stringify({ id: username, name: user.name, role: user.role }),
+        );
+        window.location.href = 'clients.html';
+      } else {
+        alert('Login mislukt');
+      }
     } catch (err) {
       const user = fallbackUsers[username];
       if (user && user.password === password) {
